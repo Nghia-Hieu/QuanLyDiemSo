@@ -23,6 +23,7 @@ import javax.swing.JTextPane;
 public class HocSinhFrame extends JFrame{
 
 	private JFrame frame;
+	private String maHS;
 
 	private JPanel contentPane;
 	private JTabbedPane tabbedPane;
@@ -51,6 +52,11 @@ public class HocSinhFrame extends JFrame{
 	 * Create the application.
 	 */
 	public HocSinhFrame() {
+		initialize();
+	}
+	
+	public HocSinhFrame(String maHS) {
+		this.maHS = maHS;
 		initialize();
 	}
 

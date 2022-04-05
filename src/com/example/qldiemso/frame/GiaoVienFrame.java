@@ -24,10 +24,14 @@ import javax.swing.SwingConstants;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableColumnModel;
+
+import com.example.qldiemso.model.GiaoVien;
+
 import javax.swing.JComboBox;
 
 public class GiaoVienFrame extends JFrame {
-
+	
+	private String maGV;
 	private JFrame frame;
 	private JPanel contentPane;
 	private JTabbedPane tabbedPane;
@@ -55,6 +59,10 @@ public class GiaoVienFrame extends JFrame {
 	 * Create the application.
 	 */
 	public GiaoVienFrame() {
+		initialize();
+	}
+	public GiaoVienFrame(String maGV) {
+		this.maGV = maGV;
 		initialize();
 	}
 
