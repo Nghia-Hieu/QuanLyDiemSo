@@ -1,12 +1,9 @@
 package com.example.qldiemso.frame;
 
-import java.awt.EventQueue;
-
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import java.awt.Color;
 import javax.swing.JTextField;
-import javax.swing.event.MenuKeyEvent;
 
 
 import javax.swing.JPasswordField;
@@ -15,23 +12,12 @@ import javax.swing.JOptionPane;
 
 import java.awt.Font;
 
-import javax.print.attribute.standard.JobOriginatingUserName;
-import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
-import java.io.IOException;
-import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.ResultSet;
-import java.sql.Statement;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.sql.*;
-import java.text.ParseException;
 import javax.swing.SwingConstants;
 
 
@@ -114,13 +100,13 @@ public class DangNhapFrame extends JFrame {
 		btnLogin.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				System.out.println(userText.getText()+" "+passText.getText());
-				if(userText.getText().equals("student") && passText.getText().toString().equals("1234")) {
+				if(userText.getText().equals("student") && passText.getText().toString().equals("1")) {
 					HocSinhFrame new_student = new HocSinhFrame();
 					new_student.setVisible(true);
 				}
 				
-				if(userText.getText().equals("teacher") && passText.getText().equals("4321")) {
-					GiaoVienFrame new_teacher = new GiaoVienFrame();
+				if(userText.getText().equals("teacher") && passText.getText().equals("1")) {
+					GiaoVienScreen new_teacher = new GiaoVienScreen();
 					new_teacher.setVisible(true);
 				}
 				
