@@ -118,7 +118,7 @@ public class GiaoVuScreen extends JFrame {
 		ClassPanel.add(updateListBtn);
 
 		JLabel idLabel = new JLabel("M\u00E3 h\u1ECDc sinh");
-		idLabel.setBounds(39, 109, 58, 13);
+		idLabel.setBounds(28, 109, 69, 13);
 		ClassPanel.add(idLabel);
 
 		idText = new JTextField();
@@ -127,7 +127,7 @@ public class GiaoVuScreen extends JFrame {
 		idText.setColumns(10);
 
 		JLabel nameLabel = new JLabel("T\u00EAn h\u1ECDc sinh");
-		nameLabel.setBounds(39, 166, 58, 13);
+		nameLabel.setBounds(28, 166, 69, 13);
 		ClassPanel.add(nameLabel);
 
 		nameText = new JTextField();
