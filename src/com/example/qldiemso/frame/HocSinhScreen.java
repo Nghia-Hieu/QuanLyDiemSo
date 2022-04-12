@@ -20,7 +20,7 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableColumnModel;
 import javax.swing.JTextPane;
 
-public class HocSinhFrame extends JFrame{
+public class HocSinhScreen extends JFrame{
 
 	private JFrame frame;
 	private String maHS;
@@ -39,7 +39,7 @@ public class HocSinhFrame extends JFrame{
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
 				try {
-					HocSinhFrame window = new HocSinhFrame();
+					HocSinhScreen window = new HocSinhScreen();
 					window.setVisible(true);
 				} catch (Exception e) {
 					e.printStackTrace();
@@ -51,11 +51,11 @@ public class HocSinhFrame extends JFrame{
 	/**
 	 * Create the application.
 	 */
-	public HocSinhFrame() {
+	public HocSinhScreen() {
 		initialize();
 	}
 	
-	public HocSinhFrame(String maHS) {
+	public HocSinhScreen(String maHS) {
 		this.maHS = maHS;
 		initialize();
 	}

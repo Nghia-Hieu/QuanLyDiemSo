@@ -101,13 +101,13 @@ public class DangNhapFrame extends JFrame {
 			public void actionPerformed(ActionEvent e) {
 				System.out.println(userText.getText()+" "+passText.getText());
 				if(userText.getText().equals("student") && passText.getText().toString().equals("1")) {
-					HocSinhFrame new_student = new HocSinhFrame();
+					HocSinhScreen new_student = new HocSinhScreen();
 					new_student.setVisible(true);
 				}
 				
 				if(userText.getText().equals("teacher") && passText.getText().equals("1")) {
 					GiaoVienScreen new_teacher = new GiaoVienScreen();
-					new_teacher.setVisible(true);
+					//new_teacher.setVisible(true);
 				}
 				
 				else {
