@@ -5,11 +5,14 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
@@ -19,6 +22,7 @@ import javax.swing.border.TitledBorder;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableColumnModel;
 import javax.swing.JTextPane;
+import javax.swing.JTextField;
 
 public class HocSinhScreen extends JFrame{
 
@@ -27,13 +31,17 @@ public class HocSinhScreen extends JFrame{
 
 	private JPanel contentPane;
 	private JTabbedPane tabbedPane;
-	private JPanel GradePanel, ReviewStatePanel, DoRatePanel;
+	private JPanel GradePanel, ReviewStatePanel, DoRatePanel, ManagePanel;
 	private JTable TableClass, TableReview, TableRate;
 	private JScrollPane scrollPane_class, scrollPane_review, scrollPane_rate;
 	private DefaultTableModel model_class, model_review, model_rate;
 	private JButton successReviewBtn;
 	private JButton declineReviewBtn;
 	private JLabel rateTextLabel;
+	private JTextField idCPText;
+	private JTextField passCPText;
+	private JTextField newPassCPText;
+	private JTextField confirmPassCPText;
 	
 	public static void main(String[] args) {
 		EventQueue.invokeLater(new Runnable() {
@@ -66,6 +74,20 @@ public class HocSinhScreen extends JFrame{
 	private void initialize() {
 		
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		addWindowListener(new WindowAdapter() {
+			@Override
+			public void windowClosing(WindowEvent e) {
+				int result = JOptionPane.showConfirmDialog(HocSinhScreen.this,
+						"Do you want to Exit ?", "Exit Confirmation",
+						JOptionPane.YES_NO_OPTION);
+				if(result == JOptionPane.YES_OPTION){
+					setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+				} else if (result == JOptionPane.NO_OPTION){
+					setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+				}
+			}
+		});
+
 		setBounds(100, 100, 801, 511);
 		contentPane = new JPanel();
 		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
@@ -247,5 +269,56 @@ public class HocSinhScreen extends JFrame{
 		JButton sendBtn = new JButton("G\u1EEDi");
 		sendBtn.setBounds(595, 289, 85, 77);
 		DoRatePanel.add(sendBtn);
-	}
+		
+		//--------------------------Panel 3 -------------------------------
+
+		ManagePanel = new JPanel();
+		tabbedPane.addTab("Quan li tai khoan", null, ManagePanel, null);
+		ManagePanel.setLayout(null);
+		
+		idCPText = new JTextField();
+		idCPText.setBounds(363, 118, 123, 19);
+		ManagePanel.add(idCPText);
+		idCPText.setColumns(10);
+		
+		JLabel changePassLabel = new JLabel("\u0110\u1ED4I M\u1EACT KH\u1EA8U");
+		changePassLabel.setBounds(311, 40, 96, 45);
+		ManagePanel.add(changePassLabel);
+		
+		passCPText = new JTextField();
+		passCPText.setBounds(363, 171, 123, 19);
+		ManagePanel.add(passCPText);
+		passCPText.setColumns(10);
+		
+		JLabel idLabelforchange = new JLabel("ID h\u1ECDc sinh");
+		idLabelforchange.setBounds(226, 118, 102, 16);
+		ManagePanel.add(idLabelforchange);
+		
+		JLabel oldPassLabel = new JLabel("Password hi\u1EC7n t\u1EA1i");
+		oldPassLabel.setBounds(226, 174, 102, 16);
+		ManagePanel.add(oldPassLabel);
+		
+		JLabel newPassLabel = new JLabel("Password m\u1EDBi");
+		newPassLabel.setBounds(226, 229, 102, 16);
+		ManagePanel.add(newPassLabel);
+		
+		newPassCPText = new JTextField();
+		newPassCPText.setColumns(10);
+		newPassCPText.setBounds(363, 228, 123, 19);
+		ManagePanel.add(newPassCPText);
+		
+		JLabel confirmPassLabel = new JLabel("X\u00E1c nh\u1EADn pass m\u1EDBi");
+		confirmPassLabel.setBounds(226, 281, 114, 16);
+		ManagePanel.add(confirmPassLabel);
+		
+		confirmPassCPText = new JTextField();
+		confirmPassCPText.setColumns(10);
+		confirmPassCPText.setBounds(363, 280, 123, 19);
+		ManagePanel.add(confirmPassCPText);
+		
+		JButton confirmCPLabel = new JButton("X\u00E1c nh\u1EADn \u0111\u1ED5i");
+		confirmCPLabel.setBounds(294, 350, 123, 21);
+		ManagePanel.add(confirmCPLabel);
+				
+	}		
 }

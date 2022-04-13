@@ -52,6 +52,10 @@ public class GiaoVienScreen extends JFrame implements ActionListener {
 
 	String connectionUrl = "";
 	boolean connectedDB = false;
+	private JTextField idCPText;
+	private JTextField passCPText;
+	private JTextField newPassCPText;
+	private JTextField confirmPassCPText;
 
 	public static void main(String[] args){
 		GiaoVienScreen mainProgram = new GiaoVienScreen();
@@ -102,11 +106,14 @@ public class GiaoVienScreen extends JFrame implements ActionListener {
 		JPanel tabItem2 = reviewFromStudent();
 
 		JPanel tabItem3 = rateFromStudent();
+		
+		JPanel tabItem4 = ManageAccount();
 
 		tab = new JTabbedPane();
-		tab.addTab("Quản lí điểm số", null, tabItem1);
-		tab.addTab("Phúc khảo", null, tabItem2);
-		tab.addTab("Đánh giá", null, tabItem3);
+		tab.addTab("Quan ly hoc sinh", null, tabItem1);
+		tab.addTab("Phuc khao", null, tabItem2);
+		tab.addTab("Danh Gia", null, tabItem3);
+		tab.addTab("Quan ly tai khoan", null, tabItem4);
 
 		add(tab);
 
@@ -764,7 +771,7 @@ public class GiaoVienScreen extends JFrame implements ActionListener {
 	private JPanel rateFromStudent() {
 		JPanel ratePanel = new JPanel(new BorderLayout());
 
-		String[] column_rate = {"STT", "Họ tên", "Đánh giá"};
+		String[] column_rate = {"STT", "Ho va ten", "Danh Gia"};
 		model_rate=new DefaultTableModel();
 		model_rate.setColumnIdentifiers(column_rate);
 
@@ -775,7 +782,7 @@ public class GiaoVienScreen extends JFrame implements ActionListener {
 		TableRate.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
 
 
-		Object data_rate[]= {"1","Ưng Hoàng Phúc","Co day chan, hoc thi it tiep thu con khong thi cha co gi de quan tam"};
+		Object data_rate[]= {"1","Tran Hoang Phuc","Co day chan, hoc thi it tiep thu con khong thi cha co gi de quan tam"};
 		model_rate.addRow(data_rate);
 		TableRate.setModel(model_rate);
 
@@ -794,7 +801,7 @@ public class GiaoVienScreen extends JFrame implements ActionListener {
 	private JPanel reviewFromStudent(){
 		JPanel ReviewPanel = new JPanel(new BorderLayout());
 
-		String[] column_review = {"MaHS","Họ Tên", "Lớp","Nội dung phúc khảo"};
+		String[] column_review = {"MaHS","Ho ten", "Lop","Noi dung phuc khao"};
 		model_review=new DefaultTableModel();
 		model_review.setColumnIdentifiers(column_review);
 
@@ -839,6 +846,62 @@ public class GiaoVienScreen extends JFrame implements ActionListener {
 		ReviewPanel.add(btn, BorderLayout.SOUTH);
 
 		return ReviewPanel;
+	}
+	
+	
+	private JPanel ManageAccount() {
+		JPanel ManagePanel = new JPanel();
+		idCPText = new JTextField();
+		idCPText.setBounds(363, 118, 123, 19);
+		ManagePanel.add(idCPText);
+		idCPText.setColumns(10);
+		
+		JLabel changePassLabel = new JLabel("\u0110\u1ED4I M\u1EACT KH\u1EA8U");
+		changePassLabel.setBounds(300, 37, 96, 45);
+		ManagePanel.add(changePassLabel);
+		
+		passCPText = new JTextField();
+		passCPText.setBounds(363, 171, 123, 19);
+		ManagePanel.add(passCPText);
+		passCPText.setColumns(10);
+		
+		JLabel idLabelforchange = new JLabel("ID h\u1ECDc sinh");
+		idLabelforchange.setBounds(226, 118, 102, 16);
+		ManagePanel.add(idLabelforchange);
+		
+		JLabel oldPassLabel = new JLabel("Password hi\u1EC7n t\u1EA1i");
+		oldPassLabel.setBounds(226, 174, 102, 16);
+		ManagePanel.add(oldPassLabel);
+		
+		JLabel newPassLabel = new JLabel("Password m\u1EDBi");
+		newPassLabel.setBounds(226, 229, 102, 16);
+		ManagePanel.add(newPassLabel);
+		
+		newPassCPText = new JTextField();
+		newPassCPText.setColumns(10);
+		newPassCPText.setBounds(363, 228, 123, 19);
+		ManagePanel.add(newPassCPText);
+		
+		JLabel confirmPassLabel = new JLabel("X\u00E1c nh\u1EADn pass m\u1EDBi");
+		confirmPassLabel.setBounds(226, 281, 114, 16);
+		ManagePanel.add(confirmPassLabel);
+		
+		confirmPassCPText = new JTextField();
+		confirmPassCPText.setColumns(10);
+		confirmPassCPText.setBounds(363, 280, 123, 19);
+		ManagePanel.add(confirmPassCPText);
+		
+		JButton confirmCPBtn = new JButton("X\u00E1c nh\u1EADn \u0111\u1ED5i");
+		confirmCPBtn.setBounds(294, 350, 102, 21);
+		ManagePanel.add(confirmCPBtn);
+		
+		JPanel btn = new JPanel();
+		btn.add(confirmPassLabel);
+		btn.add(confirmCPBtn);
+		
+		ManagePanel.add(btn, BorderLayout.CENTER);
+		
+		return ManagePanel;
 	}
 //
 //	private void fillDataToTable(List<Student> listStudent){
