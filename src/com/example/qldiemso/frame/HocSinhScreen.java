@@ -35,8 +35,6 @@ public class HocSinhScreen extends JFrame{
 	private JTable TableClass, TableReview, TableRate;
 	private JScrollPane scrollPane_class, scrollPane_review, scrollPane_rate;
 	private DefaultTableModel model_class, model_review, model_rate;
-	private JButton successReviewBtn;
-	private JButton declineReviewBtn;
 	private JLabel rateTextLabel;
 	private JTextField idCPText;
 	private JTextField passCPText;
@@ -60,10 +58,12 @@ public class HocSinhScreen extends JFrame{
 	 * Create the application.
 	 */
 	public HocSinhScreen() {
+		super("HocSinh");
 		initialize();
 	}
 	
 	public HocSinhScreen(String maHS) {
+		super("HocSinh " + maHS);
 		this.maHS = maHS;
 		initialize();
 	}
@@ -171,7 +171,7 @@ public class HocSinhScreen extends JFrame{
 		model_review.setColumnIdentifiers(column_review);
 		
 		scrollPane_review = new JScrollPane();
-		scrollPane_review.setBounds(20, 21, 717, 269);
+		scrollPane_review.setBounds(20, 21, 717, 359);
 		ReviewStatePanel.add(scrollPane_review);
 		TableReview = new JTable();
 		TableReview.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
@@ -188,23 +188,6 @@ public class HocSinhScreen extends JFrame{
 		clmnModelReview.getColumn(3).setPreferredWidth(50);
 		clmnModelReview.getColumn(4).setMinWidth(350);
 		scrollPane_review.setViewportView(TableReview);
-		
-		successReviewBtn = new JButton("Ch\u1EA5p nh\u1EADn");
-		successReviewBtn.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-			}
-		});
-		successReviewBtn.setBounds(228, 350, 85, 21);
-		ReviewStatePanel.add(successReviewBtn);
-		
-		declineReviewBtn = new JButton("T\u1EEB ch\u1ED1i");
-		declineReviewBtn.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				
-			}
-		});
-		declineReviewBtn.setBounds(437, 350, 85, 21);
-		ReviewStatePanel.add(declineReviewBtn);
 		
 		
 		//--------------------------Panel 3 -------------------------------
@@ -278,8 +261,9 @@ public class HocSinhScreen extends JFrame{
 		
 		idCPText = new JTextField();
 		idCPText.setBounds(363, 118, 123, 19);
-		ManagePanel.add(idCPText);
 		idCPText.setColumns(10);
+		idCPText.setEditable(false);
+		ManagePanel.add(idCPText);
 		
 		JLabel changePassLabel = new JLabel("\u0110\u1ED4I M\u1EACT KH\u1EA8U");
 		changePassLabel.setBounds(311, 40, 96, 45);

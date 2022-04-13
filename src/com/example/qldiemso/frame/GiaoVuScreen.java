@@ -36,6 +36,7 @@ public class GiaoVuScreen extends JFrame {
 	 * Create the application.
 	 */
 	public GiaoVuScreen() {
+		super("Giao Vu");
 		initialize();
 	}
 

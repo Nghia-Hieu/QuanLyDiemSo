@@ -853,8 +853,9 @@ public class GiaoVienScreen extends JFrame implements ActionListener {
 		JPanel ManagePanel = new JPanel();
 		idCPText = new JTextField();
 		idCPText.setBounds(363, 118, 123, 19);
-		ManagePanel.add(idCPText);
+		idCPText.setEditable(false);
 		idCPText.setColumns(10);
+		ManagePanel.add(idCPText);
 		
 		JLabel changePassLabel = new JLabel("\u0110\u1ED4I M\u1EACT KH\u1EA8U");
 		changePassLabel.setBounds(300, 37, 96, 45);
