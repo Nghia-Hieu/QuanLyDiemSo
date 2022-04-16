@@ -7,7 +7,11 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.security.interfaces.RSAKey;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
+import javax.naming.NoInitialContextException;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JFrame;
@@ -21,18 +25,21 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableColumnModel;
+
+import com.example.qldiemso.string.HocSinhDtb;
+
 import javax.swing.JTextPane;
 import javax.swing.JTextField;
 
 public class HocSinhScreen extends JFrame{
 
 	private JFrame frame;
-	private String maHS;
+	private int maHS;
 
 	private JPanel contentPane;
 	private JTabbedPane tabbedPane;
 	private JPanel GradePanel, ReviewStatePanel, DoRatePanel, ManagePanel;
-	private JTable TableClass, TableReview, TableRate;
+	private JTable TableGrade, TableReview, TableRate;
 	private JScrollPane scrollPane_class, scrollPane_review, scrollPane_rate;
 	private DefaultTableModel model_class, model_review, model_rate;
 	private JLabel rateTextLabel;
@@ -40,6 +47,9 @@ public class HocSinhScreen extends JFrame{
 	private JTextField passCPText;
 	private JTextField newPassCPText;
 	private JTextField confirmPassCPText;
+	
+	private HocSinhDtb dtb;
+
 	
 	public static void main(String[] args) {
 		EventQueue.invokeLater(new Runnable() {
@@ -62,7 +72,7 @@ public class HocSinhScreen extends JFrame{
 		initialize();
 	}
 	
-	public HocSinhScreen(String maHS) {
+	public HocSinhScreen(int maHS) {
 		super("HocSinh " + maHS);
 		this.maHS = maHS;
 		initialize();
@@ -113,21 +123,23 @@ public class HocSinhScreen extends JFrame{
 		scrollPane_class = new JScrollPane();
 		scrollPane_class.setBounds(20, 54, 717, 339);
 		GradePanel.add(scrollPane_class);
-		TableClass = new JTable();
-		TableClass.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
+		TableGrade = new JTable();
+		TableGrade.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
 		
 		Object data[]= {"1","Nguyen Van A", "Sinh", 10,10,10,10};
 		model_class.addRow(data);
 		
+		//refreshTable(model_class);
 		
-		TableClass.addMouseListener(new MouseAdapter() {
+		
+		TableGrade.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseClicked(MouseEvent e) {
 				
 			}
 		});
-		TableClass.setModel(model_class);
-		TableColumnModel clmnModel = TableClass.getColumnModel();
+		TableGrade.setModel(model_class);
+		TableColumnModel clmnModel = TableGrade.getColumnModel();
 		clmnModel.getColumn(0).setPreferredWidth(30);
 		clmnModel.getColumn(1).setPreferredWidth(100);
 		clmnModel.getColumn(2).setPreferredWidth(40);
@@ -137,12 +149,12 @@ public class HocSinhScreen extends JFrame{
 		clmnModel.getColumn(6).setPreferredWidth(10);
 
 
-		scrollPane_class.setViewportView(TableClass);
+		scrollPane_class.setViewportView(TableGrade);
 		
 		JButton refreshListBtn = new JButton("L\u00E0m m\u1EDBi");
 		refreshListBtn.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				
+				//refreshPointTable(model_class);
 			}
 		});
 		refreshListBtn.setBounds(569, 10, 85, 21);
@@ -151,7 +163,18 @@ public class HocSinhScreen extends JFrame{
 		JButton reviewBtn = new JButton("G\u1EEDi ph\u00FAc kh\u1EA3o");
 		reviewBtn.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
+				int grade_col = TableGrade.getSelectedColumn();
+				int grade_row = TableGrade.getSelectedRow();
 				
+				String grade_review = gradeCol(grade_col);
+				String subject_review = (String) TableGrade.getValueAt(2, grade_row);
+				String grade_review_text = "Xem xet lai diem "+grade_review;
+				try {
+					dtb.sendReview(maHS, subject_review, grade_review_text);
+				} catch (SQLException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
 			}
 		});
 		reviewBtn.setBounds(310, 396, 122, 21);
@@ -179,6 +202,22 @@ public class HocSinhScreen extends JFrame{
 		
 		Object data_review[]= {"Sinh","Nguyen Van A", "10A5", "Dang cho", "15' mon Sinh bi sai"};
 		model_review.addRow(data_review);
+		
+//		try {
+//		ResultSet rs;
+//			rs = dtb.getPoint(maHS);
+//			model_review.setRowCount(0);
+//			while(rs.next()) {
+//				int idHS = rs.getInt("maHS");
+//				int idGV = rs.getInt("maGV");
+//				String note = rs.getString("NoiDung");
+//
+//				Object editData[] = {idHS,idGV, note};
+//				model_review.addRow(editData);
+//			}
+//		} catch (SQLException e) {
+//			JOptionPane.showMessageDialog(null, "Can't search Treatment Place");
+//		}
 		
 		TableReview.setModel(model_review);
 		TableColumnModel clmnModelReview = TableReview.getColumnModel();
@@ -228,6 +267,23 @@ public class HocSinhScreen extends JFrame{
 
 		Object data_rate[]= {"Sinh","Nguyen Thi Linh","21/02/2022", "Co day sieu ghe"};
 		model_rate.addRow(data_rate);
+		
+//		try {
+//			ResultSet rs;
+//			rs = dtb.getRate(maHS);
+//			model_rate.setRowCount(0);
+//			while(rs.next()) {
+//				int idHS = rs.getInt("maHS");
+//				int idGV = rs.getInt("maGV");
+//				String note = rs.getString("NoiDung");
+//
+//				Object editData[] = {idHS,idGV, note};
+//				model_rate.addRow(editData);
+//			}
+//		} catch (SQLException e) {
+//			JOptionPane.showMessageDialog(null, "Can't search Treatment Place");
+//		}
+//		
 		TableRate.setModel(model_rate);
 
 
@@ -245,13 +301,26 @@ public class HocSinhScreen extends JFrame{
 		rateTextLabel.setBounds(50, 346, 58, 13);
 		DoRatePanel.add(rateTextLabel);
 		
-		JTextPane textPane = new JTextPane();
-		textPane.setBounds(136, 340, 351, 77);
-		DoRatePanel.add(textPane);
+		JTextPane rateTextPane = new JTextPane();
+		rateTextPane.setBounds(136, 340, 351, 77);
+		DoRatePanel.add(rateTextPane);
 		
 		JButton sendBtn = new JButton("G\u1EEDi");
+//		sendBtn.addActionListener(new ActionListener() {
+//			public void actionPerformed(ActionEvent e) {
+//				String rateText = rateTextPane.getText();
+//				String subject = subjectsComboBox.getSelectedItem().toString();
+//				try {
+//					dtb.sendRate(maHS, subject, rateText);
+//				} catch (SQLException e1) {
+//					// TODO Auto-generated catch block
+//					e1.printStackTrace();
+//				}
+//			}
+//		});
 		sendBtn.setBounds(595, 289, 85, 77);
 		DoRatePanel.add(sendBtn);
+		
 		
 		//--------------------------Panel 3 -------------------------------
 
@@ -305,4 +374,43 @@ public class HocSinhScreen extends JFrame{
 		ManagePanel.add(confirmCPLabel);
 				
 	}		
+	
+	private void refreshPointTable( DefaultTableModel model) {
+		ResultSet rs;
+		try {
+			rs = dtb.getPoint(maHS);
+			model.setRowCount(0);
+			while(rs.next()) {
+				String psubject = rs.getString("MonHoc");
+				String pid = rs.getString("HocSinh");
+				float kt15 = rs.getFloat("KiemTra15Phut");
+				float kt1 = rs.getFloat("KiemTra1Tiet");
+				float ktg = rs.getFloat("GiuaHK");
+				float ktc = rs.getFloat("CuoiHK");
+
+				Object editData[] = {kt15, kt1, ktg, ktc};
+				model.addRow(editData);
+			}
+		} catch (SQLException e) {
+			JOptionPane.showMessageDialog(null, "Can't search Treatment Place");
+		}
+	}
+	
+	private String gradeCol(int col) {
+		switch (col) {
+		case 3: 
+			return "KiemTra15Phut";
+		case 4: 
+			return "KiemTra1Tiet";
+			
+		case 5: 
+			return "GiuaHK";
+			
+		case 6: 
+			return "CuoiHK";
+			
+		default:
+			throw new IllegalArgumentException("Unexpected value: " + col);
+		}
+	}
 }
