@@ -1,7 +1,15 @@
 package com.example.qldiemso.frame;
 
+import com.example.qldiemso.model.GiaoVien;
+import com.example.qldiemso.model.HocSinh;
+import com.example.qldiemso.model.BangDiem;
+import com.example.qldiemso.string.GiaoVienDtb;
+import com.example.qldiemso.string.HocSinhDtb;
+
 import java.awt.*;
 import java.awt.event.*;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.swing.*;
 import javax.swing.table.*;
@@ -43,11 +51,13 @@ public class GiaoVienScreen extends JFrame implements ActionListener {
 	private JButton successReviewBtn;
 	private JButton declineReviewBtn;
 
+	private GiaoVien teacher = new GiaoVien();
+
 	JTable table;
 	DefaultTableModel model;
 
-	String[] columnNames = { "ID", "Full name", "15 Minutes", "1 Period", "Middle Semester", "Final Semester","Notes" };
-
+	String[] columnNames = { "Std ID", "Full name", "15 Minutes", "1 Period", "Middle Semester", "Final Semester","Notes" };
+	List<HocSinh> listStudentMarks = new ArrayList<HocSinh>();
 	int selectedRow = -1;
 
 	String connectionUrl = "";
@@ -58,12 +68,16 @@ public class GiaoVienScreen extends JFrame implements ActionListener {
 	private JTextField confirmPassCPText;
 
 	public static void main(String[] args){
-		GiaoVienScreen mainProgram = new GiaoVienScreen();
+		GiaoVienDtb db = new GiaoVienDtb();
+		GiaoVien teacher = db.getTeacher("CaoMinhPhuc");
+
+		GiaoVienScreen mainProgram = new GiaoVienScreen(teacher);
 		mainProgram.showUI();
 	}
 
-	public GiaoVienScreen(){
+	public GiaoVienScreen(GiaoVien teacher){
 		super("Student management");
+		this.teacher = teacher;
 		prepareGUI();
 	}
 
@@ -146,54 +160,6 @@ public class GiaoVienScreen extends JFrame implements ActionListener {
 		setVisible(true);
 	}
 
-//	private List<Student> readFromDatabase(Connection connection) {
-//		Statement statement = null;
-//		ResultSet resultSet = null;
-//
-//		List<Student> listStudent = new ArrayList<Student>();
-//
-//		try{
-//			String SQL = "select * from student ";
-//			statement = connection.createStatement();
-//			resultSet = statement.executeQuery(SQL);
-//
-//			while (resultSet.next()) {
-//				String id = resultSet.getString(1);
-//				String name = resultSet.getString(2);
-//				String gpa = resultSet.getString(3);
-//				String address = resultSet.getString(4);
-//				String img = resultSet.getString(5);
-//				String notes = resultSet.getString(6);
-//
-//				boolean isOk = checkValidInput(id, name, gpa, address, img, notes);
-//				if (isOk)
-//					listStudent.add(new Student(id, name, Float.parseFloat(gpa), address, img, notes));
-//			}
-//		} catch (Exception ex){
-//			JOptionPane.showMessageDialog(frame, "Having some error while get database !",
-//					"Warning", JOptionPane.WARNING_MESSAGE);
-//		} finally {
-//			if(statement != null){
-//				try{
-//					connection.close();
-//				}
-//				catch(Exception ex) {
-//					ex.printStackTrace();
-//				}
-//			}
-//			if(resultSet != null){
-//				try{
-//					connection.close();
-//				}
-//				catch(Exception ex) {
-//					ex.printStackTrace();
-//				}
-//			}
-//		}
-//
-//		return listStudent;
-//	}
-//
 //	private void saveToDatabase(String connectionUrl){
 //		Connection connection = null;
 //		Statement statement = null;
@@ -251,63 +217,63 @@ public class GiaoVienScreen extends JFrame implements ActionListener {
 //			}
 //		}
 //	}
-//
-//	private boolean checkValidInput(String id_ip, String name_ip, String gpa_ip,
-//									String address_ip, String imgsrc_ip, String notes_ip){
-//		if (id_ip.length() != 8) {
-//			JOptionPane.showMessageDialog(frame,
-//					"ID invalid! ID have 8 character!",
-//					"Warning", JOptionPane.WARNING_MESSAGE);
-//			return false;
-//		}
-//
-//		if (name_ip.length() > 25) {
-//			JOptionPane.showMessageDialog(frame,
-//					"Name too long! Input a name with less than 25 character",
-//					"Warning", JOptionPane.WARNING_MESSAGE);
-//			return false;
-//		}
-//
-//		float gpa = 5;
-//		try{
-//			gpa = Float.parseFloat(gpa_ip);
-//		} catch(Exception ex) {
-//			JOptionPane.showMessageDialog(frame,
-//					"Please input a float number <= 4.0 into GPA field!",
-//					"Warning", JOptionPane.WARNING_MESSAGE);
-//			return false;
-//		}
-//
-//		if(gpa > 4) {
-//			JOptionPane.showMessageDialog(frame,
-//					"Please input a float number <= 4.0 into GPA field!",
-//					"Warning", JOptionPane.WARNING_MESSAGE);
-//			return false;
-//		}
-//
-//		if (address_ip.length() > 50) {
-//			JOptionPane.showMessageDialog(frame,
-//					"Address too long! Input an address with less than 50 character",
-//					"Warning", JOptionPane.WARNING_MESSAGE);
-//			return false;
-//		}
-//
-//		if (imgsrc_ip.length() > 40) {
-//			JOptionPane.showMessageDialog(frame,
-//					"Image source too long! Input a image source with less than 40 character",
-//					"Warning", JOptionPane.WARNING_MESSAGE);
-//			return false;
-//		}
-//
-//		if (notes_ip.length() > 50) {
-//			JOptionPane.showMessageDialog(frame,
-//					"Notes too long! Input notes with less than 50 character",
-//					"Invalid Notes input", JOptionPane.WARNING_MESSAGE);
-//			return false;
-//		}
-//
-//		return true;
-//	}
+
+	private boolean checkValidInput(String id_ip, String name_ip, String gpa_ip,
+									String address_ip, String imgsrc_ip, String notes_ip){
+		if (id_ip.length() != 8) {
+			JOptionPane.showMessageDialog(frame,
+					"ID invalid! ID have 8 character!",
+					"Warning", JOptionPane.WARNING_MESSAGE);
+			return false;
+		}
+
+		if (name_ip.length() > 25) {
+			JOptionPane.showMessageDialog(frame,
+					"Name too long! Input a name with less than 25 character",
+					"Warning", JOptionPane.WARNING_MESSAGE);
+			return false;
+		}
+
+		float gpa = 5;
+		try{
+			gpa = Float.parseFloat(gpa_ip);
+		} catch(Exception ex) {
+			JOptionPane.showMessageDialog(frame,
+					"Please input a float number <= 4.0 into GPA field!",
+					"Warning", JOptionPane.WARNING_MESSAGE);
+			return false;
+		}
+
+		if(gpa > 4) {
+			JOptionPane.showMessageDialog(frame,
+					"Please input a float number <= 4.0 into GPA field!",
+					"Warning", JOptionPane.WARNING_MESSAGE);
+			return false;
+		}
+
+		if (address_ip.length() > 50) {
+			JOptionPane.showMessageDialog(frame,
+					"Address too long! Input an address with less than 50 character",
+					"Warning", JOptionPane.WARNING_MESSAGE);
+			return false;
+		}
+
+		if (imgsrc_ip.length() > 40) {
+			JOptionPane.showMessageDialog(frame,
+					"Image source too long! Input a image source with less than 40 character",
+					"Warning", JOptionPane.WARNING_MESSAGE);
+			return false;
+		}
+
+		if (notes_ip.length() > 50) {
+			JOptionPane.showMessageDialog(frame,
+					"Notes too long! Input notes with less than 50 character",
+					"Invalid Notes input", JOptionPane.WARNING_MESSAGE);
+			return false;
+		}
+
+		return true;
+	}
 //
 //	private boolean configDatabase(){
 //		boolean isSuccess = false;
@@ -847,8 +813,7 @@ public class GiaoVienScreen extends JFrame implements ActionListener {
 
 		return ReviewPanel;
 	}
-	
-	
+
 	private JPanel ManageAccount() {
 		JPanel ManagePanel = new JPanel();
 		idCPText = new JTextField();
@@ -904,15 +869,23 @@ public class GiaoVienScreen extends JFrame implements ActionListener {
 		
 		return ManagePanel;
 	}
-//
-//	private void fillDataToTable(List<Student> listStudent){
-//		model.setRowCount(0);
-//		for (Student student : listStudent) {
-//			model.addRow(new Object[]{student.getId(), student.getName(), student.getGPA(),
-//					student.getAddress(), student.getImage_src(), student.getNotes()});
-//		}
-//	}
-//
+
+	private void fillDataToTable(List<HocSinh> listStudent){
+		model.setRowCount(0);
+		for (HocSinh student : listStudent) {
+			BangDiem oneSubjectMarks = new BangDiem();
+			for (BangDiem subjectMark : student.get_markTable()) {
+				if(subjectMark.get_subjectId() == teacher.get_subjectTeaching()){
+					oneSubjectMarks = subjectMark;
+					break;
+				}
+			}
+			model.addRow(new Object[]{student.get_id(), student.get_fullName(), oneSubjectMarks.get_test15minutes(),
+					oneSubjectMarks.get_test1period(),oneSubjectMarks.get_middleSemester(), oneSubjectMarks.get_finalSemester(),
+					oneSubjectMarks.getNotes()});
+		}
+	}
+
 	private void actionWhenInteractTable(){
 		int viewRow = table.getSelectedRow();
 		selectedRow = table.convertRowIndexToModel(viewRow);
@@ -922,7 +895,8 @@ public class GiaoVienScreen extends JFrame implements ActionListener {
 		test15MinutesField.setText(model.getValueAt(selectedRow, 2).toString());
 		testOnePeriodField.setText(model.getValueAt(selectedRow, 3).toString());
 		middleSemesterField.setText(model.getValueAt(selectedRow, 4).toString());
-		notes_field.setText(model.getValueAt(selectedRow, 5).toString());
+		finalSemesterField.setText(model.getValueAt(selectedRow, 5).toString());
+		notes_field.setText(model.getValueAt(selectedRow, 6).toString());
 	}
 
 	private JScrollPane showListStudent(){
@@ -951,6 +925,11 @@ public class GiaoVienScreen extends JFrame implements ActionListener {
 
 		JScrollPane sp = new JScrollPane(table);
 		sp.setPreferredSize(new Dimension(600,300));
+
+		GiaoVienDtb db = new GiaoVienDtb();
+		HocSinhDtb hs = new HocSinhDtb();
+		List<HocSinh> listStudent = hs.getAllStudentOfClass(teacher.get_listClass().get(0));
+		fillDataToTable(listStudent);
 
 		return sp;
 	}

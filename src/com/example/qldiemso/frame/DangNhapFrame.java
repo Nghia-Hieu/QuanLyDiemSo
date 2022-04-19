@@ -1,5 +1,8 @@
 package com.example.qldiemso.frame;
 
+import com.example.qldiemso.model.GiaoVien;
+import com.example.qldiemso.string.GiaoVienDtb;
+
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import java.awt.Color;
@@ -106,7 +109,10 @@ public class DangNhapFrame extends JFrame {
 				}
 				
 				if(userText.getText().equals("teacher") && passText.getText().equals("1")) {
-					GiaoVienScreen new_teacher = new GiaoVienScreen();
+					GiaoVienDtb db = new GiaoVienDtb();
+
+					GiaoVien teacher = db.getTeacher("CaoMinhPhuc");
+					GiaoVienScreen new_teacher = new GiaoVienScreen(teacher);
 					//new_teacher.setVisible(true);
 				}
 				
