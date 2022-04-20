@@ -5,6 +5,8 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.text.Normalizer;
+import java.text.Normalizer.Form;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -15,6 +17,9 @@ public class HocSinhDtb {
 	private String connectionUrl;
 
 	static public void main(String[] args) throws ClassNotFoundException, SQLException {
+		String aString = Normalizer.normalize("Ngữ Văn", Form.NFD);
+		String aString2 ="Hello "+aString;
+		System.out.println(aString2);
 		HocSinhDtb h = new HocSinhDtb();
 		//h.updateMarkOfSubject(1,1,9,9,9,9, "hello world");
 	}
@@ -29,9 +34,30 @@ public class HocSinhDtb {
 		}
 
 	}
+	
+	public HocSinh getStudentInfor(int maHS) {
+		String query = String.format("SELECT * FROM HocSinh WHERE maHS = %s",maHS);
+		System.out.println(query);
+		Connection conn;
+		try {
+			conn = DriverManager.getConnection(dbURL, username, password);
+			Statement st = conn.createStatement();
+			ResultSet rs = st.executeQuery(query);
+			if (rs.next()) {
+				//rs.next();
+				return new HocSinh(maHS, rs.getString("HoTen"), rs.getInt("GioiTinh"), rs.getInt("Tuoi"), rs.getInt("LopHoc"), rs.getInt("MaSoTK"));	
+			}
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return null;
+	}
+	
+	public ResultSet getPointInfor(int id) throws SQLException {
+		String query = String.format("SELECT * FROM BangDiemMonHoc bd JOIN HocSinh hs ON bd.HocSinh=hs.MaHS and bd.HocSinh = %s"
+				+ " JOIN MonHoc mh ON mh.MaMH = bd.MonHoc",id);
 
-	public ResultSet getPoint(int id) throws SQLException {
-		String query = "SELECT * FROM BangDiemMonHoc WHERE HocSinh='"+id+"'";
 		System.out.println(query);
 		Connection conn = DriverManager.getConnection(connectionUrl);
 		Statement st = conn.createStatement();
@@ -227,20 +253,29 @@ public class HocSinhDtb {
 		}
 	}
 
-	public void sendReview(int maHS , String subject, String text) throws SQLException { 
-		
+
+	public void sendReview(int maHS , int subject, String text) throws SQLException { 
 		Connection conn = DriverManager.getConnection(connectionUrl);
 		Statement st = conn.createStatement();
-		String query_check = "SELECT * FROM HocSinh LEFT JOIN LopHoc WHERE LopHoc = MaLop LEFT JOIN GIAOVIEN_LOPHOC "
-				+ "WHERE GiaoVien_LopHoc.MaLop = LopHoc.MaLop LEFT JOIN GiaoVien WHERE GiaoVien.MaGV = GiaoVien_LopHoc.MaGV AND MonGiangDay = "+subject;
+		String query_check = String.format("SELECT * FROM HocSinh hs \n"
+				+ "	LEFT JOIN LopHoc lh ON hs.LopHoc = lh.MaLop AND hs.MaHS=%s \n"
+				+ "	LEFT JOIN GiaoVien_LopHoc gl ON gl.MaLop = lh.MaLop \n"
+				+ "	JOIN GiaoVien gv ON gv.MaGV = gl.MaGV \n"
+				+ "	JOIN MonHoc mh ON gv.MonGiangDay = mh.MaMH \n"
+				+ "	AND mh.MaMH= %s", maHS, subject) ;
+		System.out.println(query_check);
 		ResultSet rs = st.executeQuery(query_check);
+		rs.next();
 		int maGV = rs.getInt("MaGV");
-		String query = "INSERT INTO PhucKhao VALUES ("+maHS+ "','"+maGV+"','"+text+"')";
+		String query = "INSERT INTO PhucKhao VALUES ("+maHS+ ","+maGV+",N'"+text+"')";
+		System.out.println(query);
+
 		st.executeUpdate(query);
 	}
 	
 	public ResultSet getReview(int id) throws SQLException {
-		String query = "SELECT * FROM PhucKhao WHERE HocSinh='"+id+"'";
+		String query = String.format("SELECT * FROM PhucKhao pk LEFT JOIN GiaoVien gv ON pk.GiaoVien = gv.MaGV"
+				+ " LEFT JOIN MonHoc mh ON mh.MaMH = gv.MonGiangDay and pk.HocSinh= %s ",id);
 		System.out.println(query);
 		Connection conn = DriverManager.getConnection(connectionUrl);
 		Statement st = conn.createStatement();
