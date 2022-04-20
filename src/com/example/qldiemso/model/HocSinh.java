@@ -41,6 +41,15 @@ public class HocSinh {
 //        this._finalSemester = hs_obj.get_finalSemester();
 //        this.notes = null;
 //    }
+    
+    public HocSinh(int id, String fullName, int sex, int age, int classId, int accountId) {
+        this._id = id;
+        this._fullName = fullName;
+        this._sex = sex;
+        this._age = age;
+        this._classId = classId;
+        this._accountId = accountId;
+    }
 
     public List<BangDiem> get_markTable() {
         return _markTable;

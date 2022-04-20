@@ -10,6 +10,9 @@ import java.awt.event.WindowEvent;
 import java.security.interfaces.RSAKey;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Vector;
 
 import javax.naming.NoInitialContextException;
 import javax.swing.JButton;
@@ -26,6 +29,8 @@ import javax.swing.border.TitledBorder;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableColumnModel;
 
+import com.example.qldiemso.model.BangDiem;
+import com.example.qldiemso.model.HocSinh;
 import com.example.qldiemso.string.HocSinhDtb;
 
 import javax.swing.JTextPane;
@@ -34,7 +39,8 @@ import javax.swing.JTextField;
 public class HocSinhScreen extends JFrame{
 
 	private JFrame frame;
-	private int maHS;
+	private int maHS = 1;
+	private HocSinh hs;
 
 	private JPanel contentPane;
 	private JTabbedPane tabbedPane;
@@ -103,6 +109,9 @@ public class HocSinhScreen extends JFrame{
 		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
 		setContentPane(contentPane);
 		contentPane.setLayout(null);
+		
+		dtb = new HocSinhDtb();
+		hs = dtb.getStudentInfor(maHS);
 				
 		tabbedPane = new JTabbedPane(JTabbedPane.TOP);
 		tabbedPane.setBounds(10, 10, 767, 454);
@@ -126,10 +135,10 @@ public class HocSinhScreen extends JFrame{
 		TableGrade = new JTable();
 		TableGrade.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
 		
-		Object data[]= {"1","Nguyen Van A", "Sinh", 10,10,10,10};
-		model_class.addRow(data);
+		List <BangDiem> scoreList = dtb.getAllMarksOf(maHS);
 		
-		//refreshTable(model_class);
+		
+		refreshPointTable(model_class);
 		
 		
 		TableGrade.addMouseListener(new MouseAdapter() {
@@ -154,7 +163,7 @@ public class HocSinhScreen extends JFrame{
 		JButton refreshListBtn = new JButton("L\u00E0m m\u1EDBi");
 		refreshListBtn.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				//refreshPointTable(model_class);
+				refreshPointTable(model_class);
 			}
 		});
 		refreshListBtn.setBounds(569, 10, 85, 21);
@@ -378,17 +387,17 @@ public class HocSinhScreen extends JFrame{
 	private void refreshPointTable( DefaultTableModel model) {
 		ResultSet rs;
 		try {
-			rs = dtb.getPoint(maHS);
+			rs = dtb.getPointInfor(maHS);
 			model.setRowCount(0);
 			while(rs.next()) {
-				String psubject = rs.getString("MonHoc");
-				String pid = rs.getString("HocSinh");
+				String subject = rs.getString("TenMH");
+				String name = rs.getString("HoTen");
 				float kt15 = rs.getFloat("KiemTra15Phut");
 				float kt1 = rs.getFloat("KiemTra1Tiet");
-				float ktg = rs.getFloat("GiuaHK");
-				float ktc = rs.getFloat("CuoiHK");
+				float ktg = rs.getFloat("ThiGiuaKi");
+				float ktc = rs.getFloat("ThiCuoiKi");
 
-				Object editData[] = {kt15, kt1, ktg, ktc};
+				Object editData[] = {maHS, name, subject, kt15, kt1, ktg, ktc};
 				model.addRow(editData);
 			}
 		} catch (SQLException e) {
@@ -404,10 +413,10 @@ public class HocSinhScreen extends JFrame{
 			return "KiemTra1Tiet";
 			
 		case 5: 
-			return "GiuaHK";
+			return "ThiGiuaKi";
 			
 		case 6: 
-			return "CuoiHK";
+			return "ThiCuoiKi";
 			
 		default:
 			throw new IllegalArgumentException("Unexpected value: " + col);

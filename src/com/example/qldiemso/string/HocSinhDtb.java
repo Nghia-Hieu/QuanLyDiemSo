@@ -40,8 +40,28 @@ public class HocSinhDtb {
 		password = pass;
 	}
 	
-	public ResultSet getPoint(int id) throws SQLException {
-		String query = "SELECT * FROM BangDiemMonHoc WHERE HocSinh='"+id+"'";
+	public HocSinh getStudentInfor(int maHS) {
+		String query = String.format("SELECT * FROM HocSinh WHERE maHS = %s",maHS);
+		System.out.println(query);
+		Connection conn;
+		try {
+			conn = DriverManager.getConnection(dbURL, username, password);
+			Statement st = conn.createStatement();
+			ResultSet rs = st.executeQuery(query);
+			if (rs.next()) {
+				//rs.next();
+				return new HocSinh(maHS, rs.getString("HoTen"), rs.getInt("GioiTinh"), rs.getInt("Tuoi"), rs.getInt("LopHoc"), rs.getInt("MaSoTK"));	
+			}
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return null;
+	}
+	
+	public ResultSet getPointInfor(int id) throws SQLException {
+		String query = String.format("SELECT * FROM BangDiemMonHoc bd JOIN HocSinh hs ON bd.HocSinh=hs.MaHS and bd.HocSinh = %s"
+				+ " JOIN MonHoc mh ON mh.MaMH = bd.MonHoc",id);
 		System.out.println(query);
 		Connection conn = DriverManager.getConnection(dbURL, username, password);
 		Statement st = conn.createStatement();
