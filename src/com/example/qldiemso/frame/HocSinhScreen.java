@@ -10,6 +10,8 @@ import java.awt.event.WindowEvent;
 import java.security.interfaces.RSAKey;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.text.Normalizer;
+import java.text.Normalizer.Form;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Vector;
@@ -41,6 +43,7 @@ public class HocSinhScreen extends JFrame{
 	private JFrame frame;
 	private int maHS = 1;
 	private HocSinh hs;
+	private ArrayList<Integer>listOfSubjects;
 
 	private JPanel contentPane;
 	private JTabbedPane tabbedPane;
@@ -112,6 +115,7 @@ public class HocSinhScreen extends JFrame{
 		
 		dtb = new HocSinhDtb();
 		hs = dtb.getStudentInfor(maHS);
+		listOfSubjects = new ArrayList<Integer>();
 				
 		tabbedPane = new JTabbedPane(JTabbedPane.TOP);
 		tabbedPane.setBounds(10, 10, 767, 454);
@@ -176,14 +180,29 @@ public class HocSinhScreen extends JFrame{
 				int grade_row = TableGrade.getSelectedRow();
 				
 				String grade_review = gradeCol(grade_col);
-				String subject_review = (String) TableGrade.getValueAt(2, grade_row);
-				String grade_review_text = "Xem xet lai diem "+grade_review;
-				try {
-					dtb.sendReview(maHS, subject_review, grade_review_text);
-				} catch (SQLException e1) {
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
+				String subject_name = (String) TableGrade.getValueAt(grade_row,2);	
+				//subject_name = Normalizer.normalize(subject_name, Form.NFD);
+				
+				int subject_review = listOfSubjects.get(grade_row);
+				
+				String grade_review_text = "Phuc khao: "+ grade_review +"--Mon: "+subject_name;
+				
+				String text = JOptionPane.showInputDialog(HocSinhScreen.this, grade_review_text );
+				System.out.println(subject_name);
+				if(text != null) {
+					grade_review_text += "--"+text;
+					System.out.println(grade_review_text);
+					try {
+						dtb.sendReview(maHS, subject_review, grade_review_text);
+						JOptionPane.showMessageDialog(HocSinhScreen.this, "Send review Success");
+					} catch (SQLException e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					}
 				}
+				
+				
+
 			}
 		});
 		reviewBtn.setBounds(310, 396, 122, 21);
@@ -198,7 +217,7 @@ public class HocSinhScreen extends JFrame{
 		tabbedPane.addTab("Phuc khao", null, ReviewStatePanel, null);
 		ReviewStatePanel.setLayout(null);
 		
-		String[] column_review = {"Mon","Ho va Ten", "Lop","Trang thai","Phuc Khao"};
+		String[] column_review = {"Mon","GiaoVien","Phuc Khao"};
 		model_review=new DefaultTableModel();
 		model_review.setColumnIdentifiers(column_review);
 		
@@ -212,29 +231,27 @@ public class HocSinhScreen extends JFrame{
 		Object data_review[]= {"Sinh","Nguyen Van A", "10A5", "Dang cho", "15' mon Sinh bi sai"};
 		model_review.addRow(data_review);
 		
-//		try {
-//		ResultSet rs;
-//			rs = dtb.getPoint(maHS);
-//			model_review.setRowCount(0);
-//			while(rs.next()) {
-//				int idHS = rs.getInt("maHS");
-//				int idGV = rs.getInt("maGV");
-//				String note = rs.getString("NoiDung");
-//
-//				Object editData[] = {idHS,idGV, note};
-//				model_review.addRow(editData);
-//			}
-//		} catch (SQLException e) {
-//			JOptionPane.showMessageDialog(null, "Can't search Treatment Place");
-//		}
+		try {
+		ResultSet rs;
+			rs = dtb.getReview(maHS);
+			model_review.setRowCount(0);
+			while(rs.next()) {
+				String monhoc = Normalizer.normalize(rs.getString("TenMH"), Form.NFD);
+				String tengv = rs.getString("HoTen");
+				String note = rs.getString("NoiDung");
+
+				Object editData[] = {monhoc,tengv, note};
+				model_review.addRow(editData);
+			}
+		} catch (SQLException e) {
+			JOptionPane.showMessageDialog(null, "Can't search Treatment Place");
+		}
 		
 		TableReview.setModel(model_review);
 		TableColumnModel clmnModelReview = TableReview.getColumnModel();
 		clmnModelReview.getColumn(0).setPreferredWidth(50);
 		clmnModelReview.getColumn(1).setPreferredWidth(150);
-		clmnModelReview.getColumn(2).setPreferredWidth(50);
-		clmnModelReview.getColumn(3).setPreferredWidth(50);
-		clmnModelReview.getColumn(4).setMinWidth(350);
+		clmnModelReview.getColumn(2).setMinWidth(350);
 		scrollPane_review.setViewportView(TableReview);
 		
 		
@@ -292,7 +309,7 @@ public class HocSinhScreen extends JFrame{
 //		} catch (SQLException e) {
 //			JOptionPane.showMessageDialog(null, "Can't search Treatment Place");
 //		}
-//		
+		
 		TableRate.setModel(model_rate);
 
 
@@ -390,7 +407,8 @@ public class HocSinhScreen extends JFrame{
 			rs = dtb.getPointInfor(maHS);
 			model.setRowCount(0);
 			while(rs.next()) {
-				String subject = rs.getString("TenMH");
+				String subject = Normalizer.normalize(rs.getString("TenMH"),Form.NFD);
+				int subjectID = rs.getInt("MaMH");
 				String name = rs.getString("HoTen");
 				float kt15 = rs.getFloat("KiemTra15Phut");
 				float kt1 = rs.getFloat("KiemTra1Tiet");
@@ -398,27 +416,29 @@ public class HocSinhScreen extends JFrame{
 				float ktc = rs.getFloat("ThiCuoiKi");
 
 				Object editData[] = {maHS, name, subject, kt15, kt1, ktg, ktc};
+				listOfSubjects.add(subjectID);
 				model.addRow(editData);
 			}
 		} catch (SQLException e) {
-			JOptionPane.showMessageDialog(null, "Can't search Treatment Place");
+			JOptionPane.showMessageDialog(null, "Can't search BangDiem");
 		}
 	}
 	
 	private String gradeCol(int col) {
 		switch (col) {
 		case 3: 
-			return "KiemTra15Phut";
+			return "15Phut";
 		case 4: 
-			return "KiemTra1Tiet";
+			return "1Tiet";
 			
 		case 5: 
-			return "ThiGiuaKi";
+			return "GiuaKi";
 			
 		case 6: 
-			return "ThiCuoiKi";
+			return "CuoiKi";
 			
 		default:
+			JOptionPane.showMessageDialog(null,"Please choose point to make review");
 			throw new IllegalArgumentException("Unexpected value: " + col);
 		}
 	}
