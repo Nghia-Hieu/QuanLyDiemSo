@@ -1,7 +1,9 @@
 package com.example.qldiemso.string;
 
+import com.example.qldiemso.model.DanhGia;
 import com.example.qldiemso.model.GiaoVien;
 import com.example.qldiemso.model.BangDiem;
+import com.example.qldiemso.model.PhucKhao;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -14,37 +16,21 @@ import java.util.List;
  * Description: ...
  */
 public class GiaoVienDtb {
-    private String dbURL;
-    private String username;
-    private String password;
+    private String connectionUrl;
 
     static public void main(String[] args) throws ClassNotFoundException, SQLException {
-        GiaoVienDtb db = new GiaoVienDtb();
-        GiaoVien t = db.getTeacher("CaoMinhPhuc");
-        System.out.println(t.get_subjectTeaching());
-        List<BangDiem> m = db.getAllMarksOfClass(2, 2);
-        for(int i=0 ;i < m.size();i++){
-            System.out.println(m.get(i).get_id());
-        }
+        new GiaoVienDtb().updateReview(2, "OK em");
     }
 
     public GiaoVienDtb() {
         try {
             Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
 
-            dbURL = ConfigUserSetting.connectionUrl;
-            username = ConfigUserSetting.username;
-            password = ConfigUserSetting.password;
-
+            connectionUrl = ConfigUserSetting.getConnectionUrl();
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
         }
 
-    }
-
-    public void setConfigDatabase(String username, String pass){
-        username = username;
-        password = pass;
     }
 
     public GiaoVien getTeacher(String usernameOfAccount) {
@@ -55,7 +41,7 @@ public class GiaoVienDtb {
         ResultSet resultSet = null;
 
         try{
-            conn = DriverManager.getConnection(dbURL, username, password);
+            conn = DriverManager.getConnection(connectionUrl);
             String SQL = String.format("select * from GiaoVien join TaiKhoan on" +
                     "(GiaoVien.MaSoTK = TaiKhoan.MaSoTK) WHERE TenDangNhap = '%s'", usernameOfAccount);
             statement = conn.createStatement();
@@ -77,6 +63,32 @@ public class GiaoVienDtb {
         return teacher;
     }
 
+    public List<String> getClassesNameOf(int teacherId) {
+        List<String> listClassName = new ArrayList<>();
+
+        Connection conn = null;
+        Statement statement = null;
+        ResultSet resultSet = null;
+
+        try{
+            conn = DriverManager.getConnection(connectionUrl);
+            String SQL = String.format("SELECT * FROM LopHoc JOIN GiaoVien_LopHoc ON" +
+                    "(LopHoc.MaLop = GiaoVien_LopHoc.MaLop) WHERE MaGV = '%s'", teacherId);
+            statement = conn.createStatement();
+            resultSet = statement.executeQuery(SQL);
+
+            while (resultSet.next()) {
+                String className = resultSet.getString(2);
+
+                listClassName.add(className);
+            }
+        } catch (Exception ex){
+            ex.printStackTrace();
+        }
+
+        return listClassName;
+    }
+
     public List<BangDiem> getAllMarksOfClass(int classId, int subjectId) {
         List<BangDiem> listMarks = new ArrayList<BangDiem>();
 
@@ -85,7 +97,7 @@ public class GiaoVienDtb {
         ResultSet resultSet = null;
 
         try {
-            conn = DriverManager.getConnection(dbURL, username, password);
+            conn = DriverManager.getConnection(connectionUrl);
             String SQL = String.format("SELECT * FROM BangDiemMonHoc JOIN HocSinh ON (BangDiemMonHoc.HocSinh = HocSinh.MaHS) " +
                         "WHERE  MonHoc = '%s' AND LopHoc = '%s'", classId, subjectId);
 
@@ -119,7 +131,7 @@ public class GiaoVienDtb {
         ResultSet resultSet = null;
 
         try{
-            conn = DriverManager.getConnection(dbURL, username, password);
+            conn = DriverManager.getConnection(connectionUrl);
             String SQL = String.format("SELECT * FROM MonHoc ");
             statement = conn.createStatement();
             resultSet = statement.executeQuery(SQL);
@@ -167,7 +179,7 @@ public class GiaoVienDtb {
         Statement statement = null;
         ResultSet resultSet = null;
         try{
-            conn = DriverManager.getConnection(dbURL, username, password);
+            conn = DriverManager.getConnection(connectionUrl);
 
             String SQL = String.format("SELECT * FROM GiaoVien_LopHoc WHERE MaGV = %s", teacherId);
             statement = conn.createStatement();
@@ -200,5 +212,125 @@ public class GiaoVienDtb {
         }
 
         return listClass;
+    }
+
+    public List<PhucKhao> getReviewOf(int teacherId) {
+        List<PhucKhao> listReviews = new ArrayList<PhucKhao>();
+
+        Connection conn = null;
+        Statement statement = null;
+        ResultSet resultSet = null;
+
+        try{
+            conn = DriverManager.getConnection(connectionUrl);
+            String SQL = String.format("SELECT * FROM PhucKhao WHERE GiaoVien = %s", teacherId);
+            statement = conn.createStatement();
+            resultSet = statement.executeQuery(SQL);
+
+            while (resultSet.next()) {
+                int id = Integer.parseInt(resultSet.getString(1));
+                int studentId = Integer.parseInt(resultSet.getString(2));
+                String content = resultSet.getString(4);
+                int status = Integer.parseInt(resultSet.getString(5));
+                String reason = resultSet.getString(6);
+
+                listReviews.add(new PhucKhao(id, studentId, teacherId, content, status, reason));
+            }
+
+        } catch (Exception ignored){
+
+        } finally {
+            if(statement != null){
+                try{
+                    conn.close();
+                }
+                catch(Exception ex) {
+                    ex.printStackTrace();
+                }
+            }
+            if(resultSet != null){
+                try{
+                    conn.close();
+                }
+                catch(Exception ex) {
+                    ex.printStackTrace();
+                }
+            }
+        }
+
+        return listReviews;
+    }
+
+    public void updateReview(int reviewId, String reason) {
+        Connection conn = null;
+        Statement statement = null;
+        try{
+            conn = DriverManager.getConnection(connectionUrl);
+            String SQL = String.format("UPDATE PhucKhao SET TrangThai = 1, LyDo = N'%s' WHERE MaPK = %s;",
+                    reason, reviewId);
+            statement = conn.createStatement();
+            int s = statement.executeUpdate(SQL);
+            if (s > 0) {
+                System.out.println("Successfully update");
+            } else {
+                System.out.println("Faild to update");
+            }
+        } catch (Exception ex){
+            ex.printStackTrace();
+        } finally {
+            if(statement != null){
+                try{
+                    conn.close();
+                }
+                catch(Exception ex) {
+                    ex.printStackTrace();
+                }
+            }
+        }
+    }
+
+    public List<DanhGia> getAssessmentOf(int teacherId) {
+        List<DanhGia> listAssessment = new ArrayList<DanhGia>();
+
+        Connection conn = null;
+        Statement statement = null;
+        ResultSet resultSet = null;
+
+        try{
+            conn = DriverManager.getConnection(connectionUrl);
+            String SQL = String.format("SELECT * FROM DanhGiaGiaoVien WHERE GiaoVien = %s", teacherId);
+            statement = conn.createStatement();
+            resultSet = statement.executeQuery(SQL);
+
+            while (resultSet.next()) {
+                int id = Integer.parseInt(resultSet.getString(1));
+                int studentId = Integer.parseInt(resultSet.getString(2));
+                String content = resultSet.getString(4);
+
+                listAssessment.add(new DanhGia(id, studentId, teacherId, content));
+            }
+
+        } catch (Exception ignored){
+
+        } finally {
+            if(statement != null){
+                try{
+                    conn.close();
+                }
+                catch(Exception ex) {
+                    ex.printStackTrace();
+                }
+            }
+            if(resultSet != null){
+                try{
+                    conn.close();
+                }
+                catch(Exception ex) {
+                    ex.printStackTrace();
+                }
+            }
+        }
+
+        return listAssessment;
     }
 }

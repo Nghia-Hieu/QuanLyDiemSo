@@ -14,35 +14,25 @@ import com.example.qldiemso.model.HocSinh;
 import com.example.qldiemso.model.BangDiem;
 
 public class HocSinhDtb {
-	private String dbURL;
-	private String username;
-	private String password;
-
+	private String connectionUrl;
 
 	static public void main(String[] args) throws ClassNotFoundException, SQLException {
 		String aString = Normalizer.normalize("Ngữ Văn", Form.NFD);
 		String aString2 ="Hello "+aString;
 		System.out.println(aString2);
 		HocSinhDtb h = new HocSinhDtb();
-		List<BangDiem>  hs = h.getAllMarksOf(1);
-		System.out.println(hs.size());
+		//h.updateMarkOfSubject(1,1,9,9,9,9, "hello world");
 	}
 	
 	public HocSinhDtb() {
 		try {
 			Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
-			this.dbURL = ConfigUserSetting.connectionUrl;
-			this.username = ConfigUserSetting.username;
-			this.password = ConfigUserSetting.password;
+
+			this.connectionUrl = ConfigUserSetting.getConnectionUrl();
 		} catch (ClassNotFoundException e) {
 			e.printStackTrace();
 		}
 
-	}
-
-	public void setConfigDatabase(String username, String pass){
-		username = username;
-		password = pass;
 	}
 	
 	public HocSinh getStudentInfor(int maHS) {
@@ -67,11 +57,83 @@ public class HocSinhDtb {
 	public ResultSet getPointInfor(int id) throws SQLException {
 		String query = String.format("SELECT * FROM BangDiemMonHoc bd JOIN HocSinh hs ON bd.HocSinh=hs.MaHS and bd.HocSinh = %s"
 				+ " JOIN MonHoc mh ON mh.MaMH = bd.MonHoc",id);
+
 		System.out.println(query);
-		Connection conn = DriverManager.getConnection(dbURL, username, password);
+		Connection conn = DriverManager.getConnection(connectionUrl);
 		Statement st = conn.createStatement();
 		ResultSet rs = st.executeQuery(query);
 		return rs;
+	}
+
+	public HocSinh getStudent(int studentId) {
+		HocSinh hs = new HocSinh();
+		Connection conn = null;
+		Statement statement = null;
+		ResultSet resultSet = null;
+		try{
+			conn = DriverManager.getConnection(connectionUrl);
+			String SQL = String.format("select * from HocSinh WHERE MaHS = %s", studentId);
+			statement = conn.createStatement();
+			resultSet = statement.executeQuery(SQL);
+
+			while (resultSet.next()) {
+				int id = Integer.parseInt(resultSet.getString(1));
+				String fullName = resultSet.getString(2);
+				int sex = Integer.parseInt(resultSet.getString(3));
+				int age = Integer.parseInt(resultSet.getString(4));
+				int classId = Integer.parseInt(resultSet.getString(5));
+				int accountId = Integer.parseInt(resultSet.getString(6));
+				List<BangDiem> listMark = getAllMarksOf(id);
+
+				hs = new HocSinh(id, fullName, sex, age, classId, accountId, listMark);
+			}
+
+		} catch (Exception ex){
+			ex.printStackTrace();
+		} finally {
+			if(statement != null){
+				try{
+					conn.close();
+				}
+				catch(Exception ex) {
+					ex.printStackTrace();
+				}
+			}
+			if(resultSet != null){
+				try{
+					conn.close();
+				}
+				catch(Exception ex) {
+					ex.printStackTrace();
+				}
+			}
+		}
+
+		return hs;
+	}
+
+	public String getClassName(int studentId) {
+		String className = "";
+
+		Connection conn = null;
+		Statement statement = null;
+		ResultSet resultSet = null;
+
+		try{
+			conn = DriverManager.getConnection(connectionUrl);
+			String SQL = String.format("SELECT * FROM LopHoc JOIN HocSinh ON" +
+					"(LopHoc.MaLop = HocSinh.LopHoc) WHERE MaHS = '%s'", studentId);
+			statement = conn.createStatement();
+			resultSet = statement.executeQuery(SQL);
+
+			while (resultSet.next()) {
+				className = resultSet.getString(2);
+			}
+		} catch (Exception ex){
+			ex.printStackTrace();
+		}
+
+		return className;
 	}
 
 	public List<HocSinh> getAllStudentOfClass(int classId) {
@@ -80,7 +142,7 @@ public class HocSinhDtb {
 		Statement statement = null;
 		ResultSet resultSet = null;
 		try{
-			conn = DriverManager.getConnection(dbURL, username, password);
+			conn = DriverManager.getConnection(connectionUrl);
 			String SQL = String.format("select * from HocSinh WHERE LopHoc = %s", classId);
 			statement = conn.createStatement();
 			resultSet = statement.executeQuery(SQL);
@@ -126,7 +188,7 @@ public class HocSinhDtb {
 		Statement statement = null;
 		ResultSet resultSet = null;
 		try{
-			conn = DriverManager.getConnection(dbURL, username, password);
+			conn = DriverManager.getConnection(connectionUrl);
 			String SQL = String.format("select * from BangDiemMonHoc WHERE HocSinh = %s", studentId);
 			statement = conn.createStatement();
 			resultSet = statement.executeQuery(SQL);
@@ -167,9 +229,33 @@ public class HocSinhDtb {
 		return listMarks;
 	}
 
+	public void updateMarkOfSubject(int studentId, int subjectId, BangDiem bd) {
+		Connection conn = null;
+		Statement statement = null;
+		try{
+			conn = DriverManager.getConnection(connectionUrl);
+			String SQL = String.format("UPDATE BangDiemMonHoc SET KiemTra15Phut = %s, KiemTra1Tiet = %s, " +
+					"ThiGiuaKi = %s, ThiCuoiKi = %s, GhiChu = '%s' WHERE HocSinh = %s AND MonHoc = %s",bd.get_test15minutes(),
+					bd.get_test1period(), bd.get_middleSemester(), bd.get_finalSemester(), bd.getNotes(), studentId, subjectId);
+			statement = conn.createStatement();
+			statement.executeUpdate(SQL);
+		} catch (Exception ex){
+			ex.printStackTrace();
+		} finally {
+			if(statement != null){
+				try{
+					conn.close();
+				}
+				catch(Exception ex) {
+					ex.printStackTrace();
+				}
+			}
+		}
+	}
+
+
 	public void sendReview(int maHS , int subject, String text) throws SQLException { 
-		
-		Connection conn = DriverManager.getConnection(dbURL, username, password);
+		Connection conn = DriverManager.getConnection(connectionUrl);
 		Statement st = conn.createStatement();
 		String query_check = String.format("SELECT * FROM HocSinh hs \n"
 				+ "	LEFT JOIN LopHoc lh ON hs.LopHoc = lh.MaLop AND hs.MaHS=%s \n"
@@ -191,7 +277,7 @@ public class HocSinhDtb {
 		String query = String.format("SELECT * FROM PhucKhao pk LEFT JOIN GiaoVien gv ON pk.GiaoVien = gv.MaGV"
 				+ " LEFT JOIN MonHoc mh ON mh.MaMH = gv.MonGiangDay and pk.HocSinh= %s ",id);
 		System.out.println(query);
-		Connection conn = DriverManager.getConnection(dbURL, username, password);
+		Connection conn = DriverManager.getConnection(connectionUrl);
 		Statement st = conn.createStatement();
 		ResultSet rs = st.executeQuery(query);
 		return rs;
@@ -200,7 +286,7 @@ public class HocSinhDtb {
 	public ResultSet getRate(int id) throws SQLException {
 		String query = "SELECT * FROM DanhGiaGiaoVien WHERE HocSinh='"+id+"'";
 		System.out.println(query);
-		Connection conn = DriverManager.getConnection(dbURL, username, password);
+		Connection conn = DriverManager.getConnection(connectionUrl);
 		Statement st = conn.createStatement();
 		ResultSet rs = st.executeQuery(query);
 		return rs;
@@ -208,7 +294,7 @@ public class HocSinhDtb {
 	
 	public void sendRate(int maHS , String subject, String text) throws SQLException {
 
-		Connection conn = DriverManager.getConnection(dbURL, username, password);
+		Connection conn = DriverManager.getConnection(connectionUrl);
 		Statement st = conn.createStatement();
 		String query_check = "SELECT * FROM HocSinh LEFT JOIN LopHoc WHERE LopHoc = MaLop LEFT JOIN GIAOVIEN_LOPHOC "
 				+ "WHERE GiaoVien_LopHoc.MaLop = LopHoc.MaLop LEFT JOIN GiaoVien WHERE GiaoVien.MaGV = GiaoVien_LopHoc.MaGV AND MonGiangDay = " + subject;

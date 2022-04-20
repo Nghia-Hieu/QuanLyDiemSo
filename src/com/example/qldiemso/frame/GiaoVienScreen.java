@@ -1,17 +1,20 @@
 package com.example.qldiemso.frame;
 
-import com.example.qldiemso.model.GiaoVien;
-import com.example.qldiemso.model.HocSinh;
-import com.example.qldiemso.model.BangDiem;
+import com.example.qldiemso.model.*;
+import com.example.qldiemso.string.ConfigUserSetting;
 import com.example.qldiemso.string.GiaoVienDtb;
 import com.example.qldiemso.string.HocSinhDtb;
 
 import java.awt.*;
 import java.awt.event.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
 import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.*;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import javax.swing.table.*;
 
 public class GiaoVienScreen extends JFrame implements ActionListener {
@@ -37,7 +40,7 @@ public class GiaoVienScreen extends JFrame implements ActionListener {
 
 	private JButton config_db;
 
-	private JButton id_sort_btn;
+	private JButton final_sort_btn;
 	private JButton gpa_sort_btn;
 
 	private String maGV;
@@ -45,20 +48,25 @@ public class GiaoVienScreen extends JFrame implements ActionListener {
 	private JPanel contentPane;
 	private JTabbedPane tabbedPane;
 	private JPanel ClassPanel, ReviewPanel, RatePanel;
-	private JTable TableClass, TableReview, TableRate;
+	private JTable table, TableReview, TableAssessment;
 	private JScrollPane scrollPane_class, scrollPane_review, scrollPane_rate;
-	private DefaultTableModel model_class, model_review, model_rate;
-	private JButton successReviewBtn;
-	private JButton declineReviewBtn;
+	private DefaultComboBoxModel<String> classNameModel;
+	private DefaultTableModel dataModel;
+	private DefaultTableModel reviewModel;
+	private DefaultTableModel assessmentModel;
+	private JButton respondButton;
+
+	private JComboBox comboBox_class;
 
 	private GiaoVien teacher = new GiaoVien();
 
-	JTable table;
-	DefaultTableModel model;
+	List<HocSinh> listStudent = new ArrayList<HocSinh>();
+	List<PhucKhao> listReview = new ArrayList<>();
+	List<DanhGia> listAssessment = new ArrayList<>();
 
-	String[] columnNames = { "Std ID", "Full name", "15 Minutes", "1 Period", "Middle Semester", "Final Semester","Notes" };
-	List<HocSinh> listStudentMarks = new ArrayList<HocSinh>();
 	int selectedRow = -1;
+
+	int sortMode = 0;
 
 	String connectionUrl = "";
 	boolean connectedDB = false;
@@ -87,8 +95,9 @@ public class GiaoVienScreen extends JFrame implements ActionListener {
 
 		JPanel inputStudentInfo = inputStudentInfo();
 
-		JScrollPane table = showListStudent();
 		JPanel sort_btn_panel = sortButton();
+
+		JScrollPane table = showListStudent();
 
 		JPanel config = new JPanel();
 		config_db = new JButton("CONFIG DATABASE");
@@ -119,7 +128,7 @@ public class GiaoVienScreen extends JFrame implements ActionListener {
 
 		JPanel tabItem2 = reviewFromStudent();
 
-		JPanel tabItem3 = rateFromStudent();
+		JPanel tabItem3 = assessmentFromStudent();
 		
 		JPanel tabItem4 = ManageAccount();
 
@@ -128,6 +137,98 @@ public class GiaoVienScreen extends JFrame implements ActionListener {
 		tab.addTab("Phuc khao", null, tabItem2);
 		tab.addTab("Danh Gia", null, tabItem3);
 		tab.addTab("Quan ly tai khoan", null, tabItem4);
+		tab.addChangeListener(new ChangeListener() {
+			@Override
+			public void stateChanged(ChangeEvent e) {
+				if(tab.getSelectedIndex() == 0){
+					System.out.println("mark");
+				} else if(tab.getSelectedIndex() == 1){
+					if(!connectedDB){
+						connectedDB = configDatabase();
+					}
+
+					if(connectedDB) {
+						Connection connection = null;
+
+						try {
+							Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
+							connection = DriverManager.getConnection(connectionUrl);
+
+							if (connection != null) {
+								listReview = new GiaoVienDtb().getReviewOf(teacher.get_id());
+								reviewModel.setRowCount(0);
+								for (PhucKhao row : listReview) {
+									HocSinh std = new HocSinhDtb().getStudent(row.get_studentId());
+									String className = new HocSinhDtb().getClassName(std.get_id());
+									String status = row.get_status() == 0 ? "Chưa Duyệt" : "Đã Duyệt";
+
+									reviewModel.addRow(new Object[]{row.get_id(), row.get_studentId(), std.get_fullName(),
+											className, row.get_content(), status});
+									System.out.println(row.get_content());
+								}
+							} else {
+								System.out.println("Connection fail!");
+								JOptionPane.showMessageDialog(tab, "Connect to database fail !",
+										"Warning", JOptionPane.WARNING_MESSAGE);
+							}
+						} catch (Exception ex) {
+							ex.printStackTrace();
+							JOptionPane.showMessageDialog(tab, "Connect to database fail !",
+									"Warning", JOptionPane.WARNING_MESSAGE);
+						} finally {
+							if (connection != null) {
+								try {
+									connection.close();
+								} catch (Exception ex) {
+									ex.printStackTrace();
+								}
+							}
+						}
+					}
+				} else if(tab.getSelectedIndex() == 2){
+					if(!connectedDB){
+						connectedDB = configDatabase();
+					}
+
+					if(connectedDB) {
+						Connection connection = null;
+
+						try {
+							Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
+							connection = DriverManager.getConnection(connectionUrl);
+
+							if (connection != null) {
+								listAssessment = new GiaoVienDtb().getAssessmentOf(teacher.get_id());
+								assessmentModel.setRowCount(0);
+								for (DanhGia row : listAssessment) {
+									HocSinh std = new HocSinhDtb().getStudent(row.get_studentId());
+
+									assessmentModel.addRow(new Object[]{row.get_id(), std.get_fullName(),row.get_content()});
+								}
+							} else {
+								System.out.println("Connection fail!");
+								JOptionPane.showMessageDialog(tab, "Connect to database fail !",
+										"Warning", JOptionPane.WARNING_MESSAGE);
+							}
+						} catch (Exception ex) {
+							ex.printStackTrace();
+							JOptionPane.showMessageDialog(tab, "Connect to database fail !",
+									"Warning", JOptionPane.WARNING_MESSAGE);
+						} finally {
+							if (connection != null) {
+								try {
+									connection.close();
+								} catch (Exception ex) {
+									ex.printStackTrace();
+								}
+							}
+						}
+					}
+				} else if(tab.getSelectedIndex() == 3){
+					System.out.println("profile");
+				}
+			}
+		});
 
 		add(tab);
 
@@ -160,457 +261,303 @@ public class GiaoVienScreen extends JFrame implements ActionListener {
 		setVisible(true);
 	}
 
-//	private void saveToDatabase(String connectionUrl){
-//		Connection connection = null;
-//		Statement statement = null;
-//
-//		try{
-//			Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
-//			connection = DriverManager.getConnection(connectionUrl);
-//
-//			if(connection != null) {
-//				String SQL = "DELETE FROM student";
-//
-//				statement = connection.createStatement();
-//				statement.executeUpdate(SQL);
-//
-//				for(Student s : listStudent){
-//					String value = String.format("'%s', N'%s', '%s', N'%s', N'%s', N'%s'", s.getId(), s.getName(), s.getGPA(),
-//							s.getAddress(), s.getImage_src(), s.getNotes());
-//					SQL = "INSERT INTO student (id, name, gpa, address, image_src, notes) " +
-//							"VALUES (" + value + ")";
-//
-//					byte[] bytes = SQL.getBytes(StandardCharsets.UTF_8);
-//
-//					String SQL_utf8EncodedString = new String(bytes, StandardCharsets.UTF_8);
-//
-//
-//					statement = connection.createStatement();
-//					statement.executeUpdate(SQL_utf8EncodedString);
-//				}
-//			} else {
-//				System.out.println("Connection fail!");
-//				JOptionPane.showMessageDialog(frame, "Connect to database fail !",
-//						"Warning", JOptionPane.WARNING_MESSAGE);
-//			}
-//		}
-//		catch (Exception ex){
-//			JOptionPane.showMessageDialog(frame, "Connect to database fail !",
-//					"Warning", JOptionPane.WARNING_MESSAGE);
-//		}
-//		finally {
-//			if(statement != null){
-//				try{
-//					statement.close();
-//				}
-//				catch(Exception e) {
-//					e.printStackTrace();
-//				}
-//			}
-//			if(connection != null){
-//				try{
-//					connection.close();
-//				}
-//				catch(Exception e) {
-//					e.printStackTrace();
-//				}
-//			}
-//		}
-//	}
-
-	private boolean checkValidInput(String id_ip, String name_ip, String gpa_ip,
-									String address_ip, String imgsrc_ip, String notes_ip){
-		if (id_ip.length() != 8) {
-			JOptionPane.showMessageDialog(frame,
-					"ID invalid! ID have 8 character!",
-					"Warning", JOptionPane.WARNING_MESSAGE);
-			return false;
-		}
-
-		if (name_ip.length() > 25) {
-			JOptionPane.showMessageDialog(frame,
-					"Name too long! Input a name with less than 25 character",
-					"Warning", JOptionPane.WARNING_MESSAGE);
-			return false;
-		}
-
-		float gpa = 5;
+	private boolean checkValidInput(String test15, String test1, String middleSeme, String finalSeme){
 		try{
-			gpa = Float.parseFloat(gpa_ip);
+			Float.parseFloat(test15);
+			Float.parseFloat(test1);
+			Float.parseFloat(middleSeme);
+			Float.parseFloat(finalSeme);
 		} catch(Exception ex) {
-			JOptionPane.showMessageDialog(frame,
-					"Please input a float number <= 4.0 into GPA field!",
-					"Warning", JOptionPane.WARNING_MESSAGE);
-			return false;
-		}
-
-		if(gpa > 4) {
-			JOptionPane.showMessageDialog(frame,
-					"Please input a float number <= 4.0 into GPA field!",
-					"Warning", JOptionPane.WARNING_MESSAGE);
-			return false;
-		}
-
-		if (address_ip.length() > 50) {
-			JOptionPane.showMessageDialog(frame,
-					"Address too long! Input an address with less than 50 character",
-					"Warning", JOptionPane.WARNING_MESSAGE);
-			return false;
-		}
-
-		if (imgsrc_ip.length() > 40) {
-			JOptionPane.showMessageDialog(frame,
-					"Image source too long! Input a image source with less than 40 character",
-					"Warning", JOptionPane.WARNING_MESSAGE);
-			return false;
-		}
-
-		if (notes_ip.length() > 50) {
-			JOptionPane.showMessageDialog(frame,
-					"Notes too long! Input notes with less than 50 character",
-					"Invalid Notes input", JOptionPane.WARNING_MESSAGE);
 			return false;
 		}
 
 		return true;
 	}
-//
-//	private boolean configDatabase(){
-//		boolean isSuccess = false;
-//		JPanel dialogPanel = new JPanel(new GridBagLayout());
-//
-//		JTextField server = new JTextField(15);
-//		server.setText("localhost");
-//		JTextField port = new JTextField(15);
-//		port.setText("1433");
-//		JTextField db_name = new JTextField(15);
-//		db_name.setText("studentManagement");
-//		JTextField user = new JTextField(15);
-//		JPasswordField pass = new JPasswordField(15);
-//
-//		GridBagConstraints gbc = new GridBagConstraints();
-//		gbc.insets = new Insets(3,5,3,15);
-//		gbc.gridx=0;
-//		gbc.gridy=0;
-//		dialogPanel.add(new JLabel("Server: "), gbc);
-//		gbc.gridx=1;
-//		dialogPanel.add(server,gbc);
-//		gbc.gridx=0;
-//		gbc.gridy=1;
-//		dialogPanel.add(new JLabel("Port: "), gbc);
-//		gbc.gridx=1;
-//		gbc.gridy=1;
-//		dialogPanel.add(port, gbc);
-//		gbc.gridx=0;
-//		gbc.gridy=2;
-//		dialogPanel.add(new JLabel("Database name: "), gbc);
-//		gbc.gridx=1;
-//		gbc.gridy=2;
-//		dialogPanel.add(db_name, gbc);
-//		gbc.gridx=0;
-//		gbc.gridy=3;
-//		dialogPanel.add(new JLabel("Username: "), gbc);
-//		gbc.gridx=1;
-//		gbc.gridy=3;
-//		dialogPanel.add(user, gbc);
-//		gbc.gridx=0;
-//		gbc.gridy=4;
-//		dialogPanel.add(new JLabel("Password: "), gbc);
-//		gbc.gridx=1;
-//		gbc.gridy=4;
-//		dialogPanel.add(pass, gbc);
-//
-//		int result = JOptionPane.showConfirmDialog(frame, dialogPanel, "Config database",
-//				JOptionPane.OK_CANCEL_OPTION,JOptionPane.PLAIN_MESSAGE);
-//
-//		if(result == JOptionPane.OK_OPTION) {
-//			connectionUrl =
-//					String.format("jdbc:sqlserver://%s:%s;databaseName=%s;user=%s;password=%s",
-//							server.getText(), port.getText(), db_name.getText(), user.getText(), String.valueOf(pass.getPassword()));
-//			Connection connection = null;
-//
-//			try{
-//				Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
-//				connection = DriverManager.getConnection(connectionUrl);
-//
-//				if(connection != null) {
-//					isSuccess = true;
-//					JOptionPane.showMessageDialog(frame,
-//							"Connected to database " + db_name.getText(), "Success",
-//							JOptionPane.INFORMATION_MESSAGE);
-//				} else {
-//					JOptionPane.showMessageDialog(frame, "Connect to database fail !",
-//							"Warning", JOptionPane.WARNING_MESSAGE);
-//				}
-//			}
-//			catch (Exception ex){
-//				ex.printStackTrace();
-//				JOptionPane.showMessageDialog(frame, "Connect to database fail !",
-//						"Warning", JOptionPane.WARNING_MESSAGE);
-//			}
-//			finally {
-//				if(connection != null){
-//					try{
-//						connection.close();
-//					}
-//					catch(Exception ex) {
-//						ex.printStackTrace();
-//					}
-//				}
-//			}
-//		}
-//
-//		return isSuccess;
-//	}
+
+	private boolean configDatabase(){
+		boolean isSuccess = false;
+		JPanel dialogPanel = new JPanel(new GridBagLayout());
+
+		JTextField server = new JTextField(15);
+		server.setText("localhost");
+		JTextField port = new JTextField(15);
+		port.setText("1433");
+		JTextField db_name = new JTextField(15);
+		db_name.setText("ManageScore");
+		JTextField user = new JTextField(15);
+		JPasswordField pass = new JPasswordField(15);
+
+		GridBagConstraints gbc = new GridBagConstraints();
+		gbc.insets = new Insets(3,5,3,15);
+		gbc.gridx=0;
+		gbc.gridy=0;
+		dialogPanel.add(new JLabel("Server: "), gbc);
+		gbc.gridx=1;
+		dialogPanel.add(server,gbc);
+		gbc.gridx=0;
+		gbc.gridy=1;
+		dialogPanel.add(new JLabel("Port: "), gbc);
+		gbc.gridx=1;
+		gbc.gridy=1;
+		dialogPanel.add(port, gbc);
+		gbc.gridx=0;
+		gbc.gridy=2;
+		dialogPanel.add(new JLabel("Database name: "), gbc);
+		gbc.gridx=1;
+		gbc.gridy=2;
+		dialogPanel.add(db_name, gbc);
+		gbc.gridx=0;
+		gbc.gridy=3;
+		dialogPanel.add(new JLabel("Username: "), gbc);
+		gbc.gridx=1;
+		gbc.gridy=3;
+		dialogPanel.add(user, gbc);
+		gbc.gridx=0;
+		gbc.gridy=4;
+		dialogPanel.add(new JLabel("Password: "), gbc);
+		gbc.gridx=1;
+		gbc.gridy=4;
+		dialogPanel.add(pass, gbc);
+
+		int result = JOptionPane.showConfirmDialog(tab, dialogPanel, "Config database",
+				JOptionPane.OK_CANCEL_OPTION,JOptionPane.PLAIN_MESSAGE);
+
+		if(result == JOptionPane.OK_OPTION) {
+			connectionUrl =
+					String.format("jdbc:sqlserver://%s:%s;databaseName=%s;user=%s;password=%s",
+							server.getText(), port.getText(), db_name.getText(), user.getText(), String.valueOf(pass.getPassword()));
+			Connection connection = null;
+
+			try{
+				Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
+				connection = DriverManager.getConnection(connectionUrl);
+
+				if(connection != null) {
+					isSuccess = true;
+
+					ConfigUserSetting.databaseName = db_name.getText();
+					ConfigUserSetting.username = user.getText();
+					ConfigUserSetting.password = String.valueOf(pass.getPassword());
+
+					JOptionPane.showMessageDialog(tab,
+							"Connected to database " + db_name.getText(), "Success",
+							JOptionPane.INFORMATION_MESSAGE);
+				} else {
+					JOptionPane.showMessageDialog(tab, "Connect to database fail !",
+							"Warning", JOptionPane.WARNING_MESSAGE);
+				}
+			}
+			catch (Exception ex){
+				ex.printStackTrace();
+				JOptionPane.showMessageDialog(tab, "Connect to database fail !",
+						"Warning", JOptionPane.WARNING_MESSAGE);
+			}
+			finally {
+				if(connection != null){
+					try{
+						connection.close();
+					}
+					catch(Exception ex) {
+						ex.printStackTrace();
+					}
+				}
+			}
+		}
+
+		return isSuccess;
+	}
 
 	public void actionPerformed(ActionEvent e) {
-//		if(e.getSource() == add_btn) {
-//			String id = id_field.getText();
-//			String name = name_field.getText();
-//			String gpa = gpa_field.getText();
-//			String address = address_field.getText();
-//			String img = img_field.getText();
-//			String notes = notes_field.getText();
-//
-//			boolean isOk = checkValidInput(id, name, gpa, address, img, notes);
-//
-//			if (Operation.checkID(listStudent, id_field.getText()) == 1) {
-//				isOk = false;
-//				JOptionPane.showMessageDialog(frame,
-//						"ID " + id_field.getText() + " is existing!");
-//			}
-//
-//			if(isOk) {
-//				Student std = new Student(id, name, Float.parseFloat(gpa), address, img, notes);
-//				Operation.addStudent(listStudent, std);
-//				fillDataToTable(listStudent);
-//
-//				id_field.setText("");
-//				name_field.setText("");
-//				gpa_field.setText("");
-//				address_field.setText("");
-//				img_field.setText("");
-//				notes_field.setText("");
-//			}
-//		}
-//		else if(e.getSource() == update_btn) {
-//			String id = id_field.getText();
-//			String name = name_field.getText();
-//			String gpa = gpa_field.getText();
-//			String address = address_field.getText();
-//			String img = img_field.getText();
-//			String notes = notes_field.getText();
-//
-//			boolean isOk = checkValidInput(id, name, gpa, address, img, notes);
-//
-//			if (Operation.checkID(listStudent, id_field.getText()) == 1 &&
-//					!model.getValueAt(selectedRow,0).toString().equals(id_field.getText())) {
-//				isOk = false;
-//				JOptionPane.showMessageDialog(frame,
-//						"ID " + id_field.getText() + " is existing!");
-//			}
-//
-//			if(isOk) {
-//				Student std = new Student(id, name, Float.parseFloat(gpa), address, img, notes);
-//				Operation.updateStudent(listStudent,
-//						String.valueOf(model.getValueAt(selectedRow, 0)), std);
-//
-//				fillDataToTable(listStudent);
-//
-//				id_field.setText("");
-//				name_field.setText("");
-//				gpa_field.setText("");
-//				address_field.setText("");
-//				img_field.setText("");
-//				notes_field.setText("");
-//			}
-//		}
-//		else if(e.getSource() == delete_btn) {
-//			if(listStudent.size() == 0){
-//				JOptionPane.showMessageDialog(frame, "Table empty !!!", "Invalid Deletion",
-//						JOptionPane.ERROR_MESSAGE);
-//			} else if(table.getSelectedRow() == -1){
-//				JOptionPane.showMessageDialog(frame, "Please choose a student to delete !!!",
-//						"Invalid Deletion", JOptionPane.ERROR_MESSAGE);
-//			} else{
-//				Operation.deleteStudent(listStudent,
-//						String.valueOf(model.getValueAt(selectedRow, 0)));
-//				fillDataToTable(listStudent);
-//
-//				id_field.setText("");
-//				name_field.setText("");
-//				gpa_field.setText("");
-//				address_field.setText("");
-//				img_field.setText("");
-//				notes_field.setText("");
-//			}
-//		}
-//		else if(e.getSource() == config_db){
-//			connectedDB = configDatabase();
-//		}
-//		else if(e.getSource() == new_file_btn) {
-//			listStudent = new ArrayList<Student>();
-//			fillDataToTable(listStudent);
-//		}
-//		else if(e.getSource() == load_db_btn) {
-//			if(!connectedDB){
-//				connectedDB = configDatabase();
-//			}
-//
-//			if(connectedDB) {
-//				Connection connection = null;
-//
-//				try {
-//					Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
-//					connection = DriverManager.getConnection(connectionUrl);
-//
-//					if (connection != null) {
-//						listStudent = readFromDatabase(connection);
-//						fillDataToTable(listStudent);
-//						JOptionPane.showMessageDialog(frame, "Load from database done", "Success",
-//								JOptionPane.INFORMATION_MESSAGE);
-//					} else {
-//						System.out.println("Connection fail!");
-//						JOptionPane.showMessageDialog(frame, "Connect to database fail !",
-//								"Warning", JOptionPane.WARNING_MESSAGE);
-//					}
-//				} catch (Exception ex) {
-//					JOptionPane.showMessageDialog(frame, "Connect to database fail !",
-//							"Warning", JOptionPane.WARNING_MESSAGE);
-//				} finally {
-//					if (connection != null) {
-//						try {
-//							connection.close();
-//						} catch (Exception ex) {
-//							ex.printStackTrace();
-//						}
-//					}
-//				}
-//			}
-//		}
-//		else if(e.getSource() == save_to_db_btn) {
-//			if(!connectedDB){
-//				connectedDB = configDatabase();
-//			}
-//			if(connectedDB) {
-//				int ok;
-//				if(listStudent.isEmpty()) {
-//					ok = JOptionPane.showConfirmDialog(frame,
-//							"File is empty, this action will overwrite data in your database, you want to continue ?",
-//							"Warning", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
-//				}
-//				else{
-//					ok = JOptionPane.showConfirmDialog(frame,
-//							"This action will overwrite data in your database, you want to continue ?",
-//							"Warning", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
-//				}
-//
-//				if(ok == JOptionPane.YES_OPTION) {
-//					saveToDatabase(connectionUrl);
-//					JOptionPane.showMessageDialog(frame, "Save to database done!", "Success",
-//							JOptionPane.INFORMATION_MESSAGE);
-//				}
-//			}
-//		}
-//		else if(e.getSource() == load_csv_btn) {
-//			String path = null;
-//
-//			String userDirLocation = System.getProperty("user.dir");
-//			File userDir = new File(userDirLocation);
-//			JFileChooser jFileChooser = new JFileChooser(userDir);
-//			jFileChooser.addChoosableFileFilter(new FileNameExtensionFilter(
-//					"File .csv",
-//					"csv"
-//			));
-//			int n = jFileChooser.showOpenDialog(frame);
-//
-//			if(n == JFileChooser.APPROVE_OPTION) {
-//				listStudent = new ArrayList<Student>();
-//				path = jFileChooser.getSelectedFile().getAbsolutePath();
-//
-//				try {
-//					List<List<String>> temp = Operation.readFileCSV(path);
-//					for (List<String> s : temp) {
-//						String id = s.get(0);
-//						String name = s.get(1);
-//						String gpa = s.get(2);
-//						String address = s.get(3);
-//						String img = s.get(4);
-//						String notes = s.get(5);
-//
-//						boolean isOk = checkValidInput(id, name, String.valueOf(gpa), address, img, notes);
-//
-//						if (Operation.checkID(listStudent, id_field.getText()) == 1) {
-//							isOk = false;
-//							JOptionPane.showMessageDialog(frame,
-//									"ID " + id_field.getText() + " is existing!");
-//						}
-//
-//						if (isOk)
-//							listStudent.add(new Student(id, name, Float.parseFloat(gpa), address, img, notes));
-//						else
-//							JOptionPane.showMessageDialog(frame, "Some error when add student " +
-//									id + ", please check again!", "Warning", JOptionPane.WARNING_MESSAGE);
-//					}
-//					fillDataToTable(listStudent);
-//					JOptionPane.showMessageDialog(frame,
-//							"Import file " + jFileChooser.getSelectedFile().getName()+" done!",
-//							"Success", JOptionPane.INFORMATION_MESSAGE);
-//				} catch(Exception ex){
-//					JOptionPane.showMessageDialog(frame,"Some error while import file .csv, please try again !",
-//							"Warning", JOptionPane.WARNING_MESSAGE);
-//				}
-//			}
-//		}
-//		else if(e.getSource() == export_to_csv_btn) {
-//			if(listStudent.size() == 0){
-//				JOptionPane.showMessageDialog(frame, "Table is empty !!!", "Warning",
-//						JOptionPane.WARNING_MESSAGE);
-//			} else{
-//				String path = "";
-//				String userDirLocation = System.getProperty("user.dir");
-//				File userDir = new File(userDirLocation);
-//				JFileChooser jFileChooser = new JFileChooser(userDir);
-//				jFileChooser.addChoosableFileFilter(new FileNameExtensionFilter(
-//						"CSV file", "csv"
-//				));
-//
-//				int n = jFileChooser.showSaveDialog(frame);
-//
-//
-//				if(n == JFileChooser.APPROVE_OPTION) {
-//					File file = jFileChooser.getSelectedFile();
-//					if (file == null) {
-//						return;
-//					}
-//					if (!file.getName().toLowerCase().endsWith(".csv")) {
-//						file = new File(file.getParentFile(), file.getName() + ".csv");
-//					}
-//
-//					path = file.toString();
-//
-//					Operation.exportCSV(listStudent, path);
-//					JOptionPane.showMessageDialog(frame, "Export done!", "Success",
-//							JOptionPane.INFORMATION_MESSAGE);
-//				}
-//			}
-//		}
-//		else if(e.getSource() == id_sort_btn){
-//			TableRowSorter<TableModel> sorter = new TableRowSorter<TableModel>(table.getModel());
-//			table.setRowSorter(sorter);
-//
-//			List<RowSorter.SortKey> sortKeys = new ArrayList<RowSorter.SortKey>(50);
-//			sortKeys.add(new RowSorter.SortKey(0, SortOrder.ASCENDING));
-//			sorter.setSortKeys(sortKeys);
-//		}
-//		else if(e.getSource() == gpa_sort_btn){
-//			TableRowSorter<TableModel> sorter = new TableRowSorter<TableModel>(table.getModel());
-//			table.setRowSorter(sorter);
-//
-//			List<RowSorter.SortKey> sortKeys = new ArrayList<>(25);
-//			sortKeys.add(new RowSorter.SortKey(2, SortOrder.ASCENDING));
-//			sorter.setSortKeys(sortKeys);
-//		}
+		if(e.getSource() == comboBox_class) {
+			listStudent = new HocSinhDtb().getAllStudentOfClass(teacher.get_listClass().get(comboBox_class.getSelectedIndex()));
+			fillDataToTable();
+		}
+		else if(e.getSource() == save_btn) {
+			String id = id_field.getText();
+			String test15 = test15MinutesField.getText();
+			String test1 = testOnePeriodField.getText();
+			String middleSeme = middleSemesterField.getText();
+			String finalSeme = finalSemesterField.getText();
+			String notes = notes_field.getText();
+
+			boolean isOk = checkValidInput(test15, test1, middleSeme, finalSeme);
+
+
+			if(isOk) {
+				for (HocSinh hs : listStudent) {
+					if(hs.get_id() == Integer.parseInt(id)){
+						for(BangDiem bd : hs.get_markTable()){
+							if(bd.get_subjectId() == teacher.get_listClass().get(comboBox_class.getSelectedIndex())){
+								bd.set_test15minutes(Float.parseFloat(test15));
+								bd.set_test1period(Float.parseFloat(test1));
+								bd.set_middleSemester(Float.parseFloat(middleSeme));
+								bd.set_finalSemester(Float.parseFloat(finalSeme));
+								bd.setNotes(notes);
+							}
+						}
+					}
+				}
+
+				fillDataToTable();
+
+				JOptionPane.showMessageDialog(tab, "Save OK !");
+			}
+		}
+		else if(e.getSource() == clear_btn) {
+			if(listStudent.size() == 0){
+				JOptionPane.showMessageDialog(frame, "Table empty !!!", "Invalid Deletion",
+						JOptionPane.ERROR_MESSAGE);
+			} else if(table.getSelectedRow() == -1){
+				JOptionPane.showMessageDialog(frame, "Please choose a student to clear !!!",
+						"Invalid Clear", JOptionPane.ERROR_MESSAGE);
+			} else{
+				int ok = JOptionPane.showConfirmDialog(tab,
+						"Do you want to clear mark data of this student ?",
+						"Warning", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+				if (ok == JOptionPane.YES_OPTION) {
+					for (HocSinh hs : listStudent) {
+						if(hs.get_id() == Integer.parseInt(id_field.getText())){
+							for(BangDiem bd : hs.get_markTable()){
+								if(bd.get_subjectId() == teacher.get_listClass().get(comboBox_class.getSelectedIndex())){
+									bd.set_test15minutes(0);
+									bd.set_test1period(0);
+									bd.set_middleSemester(0);
+									bd.set_finalSemester(0);
+									bd.setNotes("");
+								}
+							}
+						}
+					}
+					fillDataToTable();
+
+					test15MinutesField.setText("0.0");
+					testOnePeriodField.setText("0.0");
+					middleSemesterField.setText("0.0");
+					finalSemesterField.setText("0.0");
+					notes_field.setText("");
+				}
+
+			}
+		}
+		else if(e.getSource() == config_db){
+			connectedDB = configDatabase();
+		}
+		else if(e.getSource() == load_db_btn) {
+			if(!connectedDB){
+				connectedDB = configDatabase();
+			}
+
+			if(connectedDB) {
+				Connection connection = null;
+
+				try {
+					Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
+					connection = DriverManager.getConnection(connectionUrl);
+
+					if (connection != null) {
+						classNameModel.addAll(new GiaoVienDtb().getClassesNameOf(teacher.get_id()));
+						comboBox_class.setSelectedIndex(0);
+						listStudent = new HocSinhDtb().getAllStudentOfClass(teacher.get_listClass().get(comboBox_class.getSelectedIndex()));
+						fillDataToTable();
+
+						JOptionPane.showMessageDialog(tab, "Load from database done", "Success",
+								JOptionPane.INFORMATION_MESSAGE);
+					} else {
+						System.out.println("Connection fail!");
+						JOptionPane.showMessageDialog(tab, "Connect to database fail !",
+								"Warning", JOptionPane.WARNING_MESSAGE);
+					}
+				} catch (Exception ex) {
+					ex.printStackTrace();
+					JOptionPane.showMessageDialog(tab, "Connect to database fail !",
+							"Warning", JOptionPane.WARNING_MESSAGE);
+				} finally {
+					if (connection != null) {
+						try {
+							connection.close();
+						} catch (Exception ex) {
+							ex.printStackTrace();
+						}
+					}
+				}
+			}
+		}
+		else if(e.getSource() == save_to_db_btn) {
+			if (!connectedDB) {
+				connectedDB = configDatabase();
+			}
+			if (connectedDB) {
+				int ok;
+				if (listStudent.isEmpty()) {
+					ok = JOptionPane.showConfirmDialog(tab,
+							"File is empty, this action will overwrite data in your database, you want to continue ?",
+							"Warning", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+				} else {
+					ok = JOptionPane.showConfirmDialog(tab,
+							"This action will overwrite data in your database, you want to continue ?",
+							"Warning", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+				}
+
+				if (ok == JOptionPane.YES_OPTION) {
+					for (HocSinh hs : listStudent) {
+						for (BangDiem bd : hs.get_markTable()) {
+							int subjectId = teacher.get_listClass().get(comboBox_class.getSelectedIndex());
+							if (bd.get_subjectId() == subjectId) {
+								new HocSinhDtb().updateMarkOfSubject(hs.get_id(), subjectId, bd);
+							}
+						}
+					}
+					JOptionPane.showMessageDialog(tab, "Save to database done!", "Success",
+							JOptionPane.INFORMATION_MESSAGE);
+				}
+			}
+		}
+		else if(e.getSource() == final_sort_btn){
+			TableRowSorter<TableModel> sorter = new TableRowSorter<TableModel>(table.getModel());
+			table.setRowSorter(sorter);
+
+			if(sortMode == 0){
+				List<RowSorter.SortKey> sortKeys = new ArrayList<RowSorter.SortKey>(50);
+				sortKeys.add(new RowSorter.SortKey(5, SortOrder.ASCENDING));
+				sorter.setSortKeys(sortKeys);
+				sortMode = 1;
+			} else{
+				List<RowSorter.SortKey> sortKeys = new ArrayList<RowSorter.SortKey>(50);
+				sortKeys.add(new RowSorter.SortKey(5, SortOrder.DESCENDING));
+				sorter.setSortKeys(sortKeys);
+				sortMode = 0;
+			}
+		}else if(e.getSource() == respondButton){
+			int reviewRow = TableReview.getSelectedRow();
+			boolean isSuccess = false;
+			JPanel dialogPanel = new JPanel(new GridBagLayout());
+
+			JTextField message = new JTextField(15);
+
+			GridBagConstraints gbc = new GridBagConstraints();
+			gbc.insets = new Insets(3,5,3,15);
+			gbc.gridx=0;
+			gbc.gridy=0;
+			dialogPanel.add(new JLabel("Message: "), gbc);
+			gbc.gridx=1;
+			dialogPanel.add(message,gbc);
+
+			int result = JOptionPane.showConfirmDialog(tab, dialogPanel, "Send Message",
+					JOptionPane.OK_CANCEL_OPTION,JOptionPane.PLAIN_MESSAGE);
+
+			if(result == JOptionPane.OK_OPTION) {
+				String mess = message.getText();
+
+				System.out.println(TableReview.getValueAt(reviewRow, 0).toString());
+
+				new GiaoVienDtb().updateReview(
+						Integer.parseInt(TableReview.getValueAt(reviewRow, 0).toString()), mess);
+
+				JOptionPane.showMessageDialog(tab, "Respond success",
+						"Success", JOptionPane.INFORMATION_MESSAGE);
+			}
+		}
+
 	}
 
 	private JPanel inputStudentInfo(){
@@ -713,7 +660,7 @@ public class GiaoVienScreen extends JFrame implements ActionListener {
 
 		clear_btn = new JButton("CLEAR");
 		clear_btn.setFont(new Font("", Font.BOLD, size_text));
-		clear_btn.setBackground(Color.red);
+		clear_btn.setBackground(Color.YELLOW);
 		clear_btn.setPreferredSize(new Dimension(100,30));
 		clear_btn.addActionListener(this);
 
@@ -734,30 +681,26 @@ public class GiaoVienScreen extends JFrame implements ActionListener {
 		return result;
 	}
 
-	private JPanel rateFromStudent() {
+	private JPanel assessmentFromStudent() {
 		JPanel ratePanel = new JPanel(new BorderLayout());
 
-		String[] column_rate = {"STT", "Ho va ten", "Danh Gia"};
-		model_rate=new DefaultTableModel();
-		model_rate.setColumnIdentifiers(column_rate);
+		String[] column_rate = {"ID", "Full Name", "Content"};
+		assessmentModel =new DefaultTableModel();
+		assessmentModel.setColumnIdentifiers(column_rate);
 
 		scrollPane_rate = new JScrollPane();
 		//scrollPane_rate.setBounds(10, 10, 729, 395);
 
-		TableRate = new JTable();
-		TableRate.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
+		TableAssessment = new JTable();
+		TableAssessment.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
+		TableAssessment.setModel(assessmentModel);
 
-
-		Object data_rate[]= {"1","Tran Hoang Phuc","Co day chan, hoc thi it tiep thu con khong thi cha co gi de quan tam"};
-		model_rate.addRow(data_rate);
-		TableRate.setModel(model_rate);
-
-		TableColumnModel clmnModelRate = TableRate.getColumnModel();
+		TableColumnModel clmnModelRate = TableAssessment.getColumnModel();
 		clmnModelRate.getColumn(0).setPreferredWidth(30);
 		clmnModelRate.getColumn(1).setMinWidth(200);
 		clmnModelRate.getColumn(2).setMinWidth(500);
 
-		scrollPane_rate.setViewportView(TableRate);
+		scrollPane_rate.setViewportView(TableAssessment);
 
 		ratePanel.add(scrollPane_rate, BorderLayout.CENTER);
 
@@ -767,46 +710,30 @@ public class GiaoVienScreen extends JFrame implements ActionListener {
 	private JPanel reviewFromStudent(){
 		JPanel ReviewPanel = new JPanel(new BorderLayout());
 
-		String[] column_review = {"MaHS","Ho ten", "Lop","Noi dung phuc khao"};
-		model_review=new DefaultTableModel();
-		model_review.setColumnIdentifiers(column_review);
-
+		String[][] data = {};
+		String[] column = {"ID", "Std ID","Full Name", "Class","Content", "Status"};
+		reviewModel =new DefaultTableModel(data, column);
 		scrollPane_review = new JScrollPane();
 		scrollPane_review.setBounds(20, 21, 717, 269);
 
 		TableReview = new JTable();
 		TableReview.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
+		TableReview.setModel(reviewModel);
 
-
-		Object data_review[]= {"1","Nguyen Van A", "10A5", "Diem 15' mon Sinh bi sai"};
-		model_review.addRow(data_review);
-
-		TableReview.setModel(model_review);
 		TableColumnModel clmnModelReview = TableReview.getColumnModel();
 		clmnModelReview.getColumn(0).setPreferredWidth(20);
-		clmnModelReview.getColumn(1).setPreferredWidth(100);
-		clmnModelReview.getColumn(2).setPreferredWidth(20);
-		clmnModelReview.getColumn(3).setMinWidth(465);
+		clmnModelReview.getColumn(1).setPreferredWidth(20);
+		clmnModelReview.getColumn(2).setPreferredWidth(100);
+		clmnModelReview.getColumn(3).setPreferredWidth(20);
+		clmnModelReview.getColumn(4).setMinWidth(465);
 		scrollPane_review.setViewportView(TableReview);
 
-		successReviewBtn = new JButton("Ch\u1EA5p nh\u1EADn");
-		successReviewBtn.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-			}
-		});
-		successReviewBtn.setBounds(228, 350, 85, 21);
-
-		declineReviewBtn = new JButton("T\u1EEB ch\u1ED1i");
-		declineReviewBtn.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-
-			}
-		});
-		declineReviewBtn.setBounds(437, 350, 85, 21);
+		respondButton = new JButton("Respond");
+		respondButton.addActionListener(this);
+		respondButton.setBounds(228, 350, 85, 21);
 
 		JPanel btn = new JPanel();
-		btn.add(successReviewBtn);
-		btn.add(declineReviewBtn);
+		btn.add(respondButton);
 
 		ReviewPanel.add(scrollPane_review,BorderLayout.CENTER);
 		ReviewPanel.add(btn, BorderLayout.SOUTH);
@@ -870,8 +797,8 @@ public class GiaoVienScreen extends JFrame implements ActionListener {
 		return ManagePanel;
 	}
 
-	private void fillDataToTable(List<HocSinh> listStudent){
-		model.setRowCount(0);
+	private void fillDataToTable(){
+		dataModel.setRowCount(0);
 		for (HocSinh student : listStudent) {
 			BangDiem oneSubjectMarks = new BangDiem();
 			for (BangDiem subjectMark : student.get_markTable()) {
@@ -880,7 +807,7 @@ public class GiaoVienScreen extends JFrame implements ActionListener {
 					break;
 				}
 			}
-			model.addRow(new Object[]{student.get_id(), student.get_fullName(), oneSubjectMarks.get_test15minutes(),
+			dataModel.addRow(new Object[]{student.get_id(), student.get_fullName(), oneSubjectMarks.get_test15minutes(),
 					oneSubjectMarks.get_test1period(),oneSubjectMarks.get_middleSemester(), oneSubjectMarks.get_finalSemester(),
 					oneSubjectMarks.getNotes()});
 		}
@@ -890,24 +817,26 @@ public class GiaoVienScreen extends JFrame implements ActionListener {
 		int viewRow = table.getSelectedRow();
 		selectedRow = table.convertRowIndexToModel(viewRow);
 
-		id_field.setText(model.getValueAt(selectedRow, 0).toString());
-		name_field.setText(model.getValueAt(selectedRow, 1).toString());
-		test15MinutesField.setText(model.getValueAt(selectedRow, 2).toString());
-		testOnePeriodField.setText(model.getValueAt(selectedRow, 3).toString());
-		middleSemesterField.setText(model.getValueAt(selectedRow, 4).toString());
-		finalSemesterField.setText(model.getValueAt(selectedRow, 5).toString());
-		notes_field.setText(model.getValueAt(selectedRow, 6).toString());
+		id_field.setText(dataModel.getValueAt(selectedRow, 0).toString());
+		name_field.setText(dataModel.getValueAt(selectedRow, 1).toString());
+		test15MinutesField.setText(dataModel.getValueAt(selectedRow, 2).toString());
+		testOnePeriodField.setText(dataModel.getValueAt(selectedRow, 3).toString());
+		middleSemesterField.setText(dataModel.getValueAt(selectedRow, 4).toString());
+		finalSemesterField.setText(dataModel.getValueAt(selectedRow, 5).toString());
+		notes_field.setText(dataModel.getValueAt(selectedRow, 6).toString());
 	}
 
 	private JScrollPane showListStudent(){
 		String[][] data = {};
-		model = new DefaultTableModel(data, columnNames);
-		table = new JTable(model);
+		String[] columnNames = { "Std ID", "Full name", "15 Minutes", "1 Period", "Middle Semester", "Final Semester","Notes" };
+		dataModel = new DefaultTableModel(data, columnNames);
+		table = new JTable(dataModel);
 		table.getColumnModel().getColumn(0).setPreferredWidth(40);
 		table.getColumnModel().getColumn(1).setPreferredWidth(130);
 		DefaultTableCellRenderer cellRenderer = new DefaultTableCellRenderer();
 		cellRenderer.setHorizontalAlignment(JLabel.CENTER);
 		table.getColumnModel().getColumn(2).setCellRenderer(cellRenderer);
+		table.setDefaultEditor(Object.class, null);
 
 		table.addMouseListener(new MouseAdapter() {
 			@Override
@@ -926,25 +855,24 @@ public class GiaoVienScreen extends JFrame implements ActionListener {
 		JScrollPane sp = new JScrollPane(table);
 		sp.setPreferredSize(new Dimension(600,300));
 
-		GiaoVienDtb db = new GiaoVienDtb();
-		HocSinhDtb hs = new HocSinhDtb();
-		List<HocSinh> listStudent = hs.getAllStudentOfClass(teacher.get_listClass().get(0));
-		fillDataToTable(listStudent);
-
 		return sp;
 	}
 
 	private JPanel sortButton() {
 		JPanel button_panel = new JPanel();
 
-		id_sort_btn = new JButton("Sort asc by ID");
-		gpa_sort_btn = new JButton("Sort asc by GPA");
+		final_sort_btn = new JButton("Sort by Final");
 
-		id_sort_btn.addActionListener(this);
-		gpa_sort_btn.addActionListener(this);
+		final_sort_btn.addActionListener(this);
 
-		button_panel.add(id_sort_btn);
-		button_panel.add(gpa_sort_btn);
+		classNameModel = new DefaultComboBoxModel<String>();
+		comboBox_class = new JComboBox();
+		comboBox_class.setModel(classNameModel);
+		comboBox_class.setPreferredSize(new Dimension(130, 30));
+		comboBox_class.addActionListener(this);
+
+		button_panel.add(comboBox_class);
+		button_panel.add(final_sort_btn);
 
 		return button_panel;
 	}
@@ -953,17 +881,14 @@ public class GiaoVienScreen extends JFrame implements ActionListener {
 		JPanel function = new JPanel();
 
 		load_db_btn = new JButton("LOAD DATABASE");
-		save_to_db_btn = new JButton("SAVE TO DATABASE");
-		export_to_csv_btn = new JButton("EXPORT .CSV");
+		save_to_db_btn = new JButton("COMMIT TO DATABASE");
 
 		load_db_btn.addActionListener(this);
 		save_to_db_btn.addActionListener(this);
-		export_to_csv_btn.addActionListener(this);
 
 		function.setLayout(new FlowLayout());
 		function.add(load_db_btn);
 		function.add(save_to_db_btn);
-		function.add(export_to_csv_btn);
 
 		return function;
 	}
