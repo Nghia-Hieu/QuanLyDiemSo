@@ -240,7 +240,7 @@ public class HocSinhScreen extends JFrame{
 		tabbedPane.addTab("Phuc khao", null, ReviewStatePanel, null);
 		ReviewStatePanel.setLayout(null);
 		
-		String[] column_review = {"Mon","GiaoVien","Phuc Khao"};
+		String[] column_review = {"Mon","GiaoVien","TrangThai","NoiDung","PhanHoi"};
 		model_review=new DefaultTableModel();
 		model_review.setColumnIdentifiers(column_review);
 		
@@ -257,9 +257,12 @@ public class HocSinhScreen extends JFrame{
 		
 		TableReview.setModel(model_review);
 		TableColumnModel clmnModelReview = TableReview.getColumnModel();
-		clmnModelReview.getColumn(0).setPreferredWidth(50);
+		clmnModelReview.getColumn(0).setPreferredWidth(100);
 		clmnModelReview.getColumn(1).setPreferredWidth(150);
-		clmnModelReview.getColumn(2).setMinWidth(350);
+		clmnModelReview.getColumn(2).setMinWidth(50);
+		clmnModelReview.getColumn(3).setMinWidth(250);
+		clmnModelReview.getColumn(4).setMinWidth(250);
+
 		scrollPane_review.setViewportView(TableReview);
 		
 		JButton refreshReviewBtn = new JButton("Refresh");
@@ -344,11 +347,14 @@ public class HocSinhScreen extends JFrame{
 				}
 				else {
 					try {
-						if(dtb.checkRate(maHS, subjectID))
+						if(dtb.checkRate(maHS, subjectID)) {
 							JOptionPane.showMessageDialog(HocSinhScreen.this, "Already Rated this teacher !!!");
+							rateTextPane.setText("");
+						}
 						else {
 							dtb.sendRate(maHS, subjectID, rateText);
 							JOptionPane.showMessageDialog(HocSinhScreen.this, "Add rate success");
+							rateTextPane.setText("");
 						}
 					} catch (SQLException e1) {
 						// TODO Auto-generated catch block
@@ -541,9 +547,15 @@ public class HocSinhScreen extends JFrame{
 				while(rs.next()) {
 					String monhoc = Normalizer.normalize(rs.getString("TenMH"), Form.NFD);
 					String tengv = rs.getString("HoTen");
+					String trangthai;
+					if(rs.getBoolean("TrangThai"))
+						trangthai = "Da duyet";
+					else
+						trangthai = "Dang cho";
 					String note = rs.getString("NoiDung");
+					String phanhoi = rs.getString(6);
 
-					Object editData[] = {monhoc,tengv, note};
+					Object editData[] = {monhoc,tengv, trangthai, note, phanhoi};
 					model.addRow(editData);
 				}
 			} catch (SQLException e) {

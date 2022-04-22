@@ -335,7 +335,7 @@ public class HocSinhDtb {
 		ResultSet rs = st.executeQuery(query_check);
 		rs.next();
 		int maGV = rs.getInt("MaGV");
-		String query = "INSERT INTO PhucKhao VALUES ("+maHS+ ","+maGV+",N'"+text+"')";
+		String query = String.format("INSERT INTO PhucKhao VALUES (%s, %s, N'%s', 0, NULL)",maHS, maGV, text);
 		System.out.println(query);
 
 		st.executeUpdate(query);
@@ -392,8 +392,9 @@ public class HocSinhDtb {
 		ResultSet rs = st.executeQuery(query_check);
 		rs.next();
 		int maGV = rs.getInt("MaGV");
-		String query_main = String.format("SELECT * FROM DanhGia WHERE HocSinh = %s AND GiaoVien = %s", maHS, maGV);
+		String query_main = String.format("SELECT * FROM DanhGiaGiaoVien WHERE HocSinh = %s AND GiaoVien = %s", maHS, maGV);
 		System.out.println(query_main);
+		rs = st.executeQuery(query_main);
 		if(rs.next())
 			return true;
 		else 
