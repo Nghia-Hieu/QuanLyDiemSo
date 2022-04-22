@@ -1,6 +1,9 @@
 package com.example.qldiemso.frame;
 
 import java.awt.EventQueue;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
@@ -8,6 +11,8 @@ import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.security.interfaces.RSAKey;
+import java.sql.Connection;
+import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.Normalizer;
@@ -23,16 +28,24 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JPasswordField;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTable;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+import javax.swing.plaf.basic.BasicInternalFrameTitlePane.IconifyAction;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableColumnModel;
 
 import com.example.qldiemso.model.BangDiem;
+import com.example.qldiemso.model.DanhGia;
 import com.example.qldiemso.model.HocSinh;
+import com.example.qldiemso.model.PhucKhao;
+import com.example.qldiemso.string.ConfigUserSetting;
+import com.example.qldiemso.string.GiaoVienDtb;
 import com.example.qldiemso.string.HocSinhDtb;
 
 import javax.swing.JTextPane;
@@ -43,7 +56,11 @@ public class HocSinhScreen extends JFrame{
 	private JFrame frame;
 	private int maHS = 1;
 	private HocSinh hs;
+	String connectionUrl = "";
+	boolean connectedDB = false;
 	private ArrayList<Integer>listOfSubjects;
+	private ArrayList<DanhGia>listRates;
+	private ArrayList<Integer>rateSubjects ;
 
 	private JPanel contentPane;
 	private JTabbedPane tabbedPane;
@@ -113,13 +130,20 @@ public class HocSinhScreen extends JFrame{
 		setContentPane(contentPane);
 		contentPane.setLayout(null);
 		
+		if(!connectedDB){
+			connectedDB = configDatabase();
+		}
+		
 		dtb = new HocSinhDtb();
 		hs = dtb.getStudentInfor(maHS);
 		listOfSubjects = new ArrayList<Integer>();
 				
 		tabbedPane = new JTabbedPane(JTabbedPane.TOP);
 		tabbedPane.setBounds(10, 10, 767, 454);
+
+		
 		contentPane.add(tabbedPane);
+		
 		
 		
 		//--------------------------Panel 1-------------------------------
@@ -181,7 +205,6 @@ public class HocSinhScreen extends JFrame{
 				
 				String grade_review = gradeCol(grade_col);
 				String subject_name = (String) TableGrade.getValueAt(grade_row,2);	
-				//subject_name = Normalizer.normalize(subject_name, Form.NFD);
 				
 				int subject_review = listOfSubjects.get(grade_row);
 				
@@ -228,24 +251,9 @@ public class HocSinhScreen extends JFrame{
 		TableReview.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
 
 		
-		Object data_review[]= {"Sinh","Nguyen Van A", "10A5", "Dang cho", "15' mon Sinh bi sai"};
-		model_review.addRow(data_review);
+		refreshReviewTable(model_review);
 		
-		try {
-		ResultSet rs;
-			rs = dtb.getReview(maHS);
-			model_review.setRowCount(0);
-			while(rs.next()) {
-				String monhoc = Normalizer.normalize(rs.getString("TenMH"), Form.NFD);
-				String tengv = rs.getString("HoTen");
-				String note = rs.getString("NoiDung");
-
-				Object editData[] = {monhoc,tengv, note};
-				model_review.addRow(editData);
-			}
-		} catch (SQLException e) {
-			JOptionPane.showMessageDialog(null, "Can't search Treatment Place");
-		}
+		
 		
 		TableReview.setModel(model_review);
 		TableColumnModel clmnModelReview = TableReview.getColumnModel();
@@ -254,6 +262,15 @@ public class HocSinhScreen extends JFrame{
 		clmnModelReview.getColumn(2).setMinWidth(350);
 		scrollPane_review.setViewportView(TableReview);
 		
+		JButton refreshReviewBtn = new JButton("Refresh");
+		refreshReviewBtn.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				refreshReviewTable(model_review);
+			}
+		});
+		refreshReviewBtn.setBounds(335, 390, 85, 21);
+		ReviewStatePanel.add(refreshReviewBtn);
+		
 		
 		//--------------------------Panel 3 -------------------------------
 
@@ -261,16 +278,19 @@ public class HocSinhScreen extends JFrame{
 		tabbedPane.addTab("Danh gia giao vien", null, DoRatePanel, null);
 		DoRatePanel.setLayout(null);
 		
-		String[] className = {"Sinh", "Toan", "Ly", "Hoa"};
-
 		JComboBox subjectsComboBox = new JComboBox();
 		
-		subjectsComboBox.addItem("Chon mon");
-		subjectsComboBox.addItem("Sinh");
-		subjectsComboBox.addItem("Toan");
-		subjectsComboBox.addItem("Ly");
-		subjectsComboBox.addItem("Hoa");
 
+		try {
+			for(int sID : dtb.getSubjectList()) {
+				subjectsComboBox.addItem(dtb.getSubjectName(sID));
+				listOfSubjects.add(sID);
+			}
+		} catch (SQLException e2) {
+			// TODO Auto-generated catch block
+			e2.printStackTrace();
+		}
+		
 
 
 		subjectsComboBox.setBounds(136, 289, 135, 21);
@@ -280,7 +300,7 @@ public class HocSinhScreen extends JFrame{
 		chooseSubjectLabel.setBounds(50, 293, 58, 13);
 		DoRatePanel.add(chooseSubjectLabel);
 		
-		String[] column_rate = {"Mon", "GiaoVien","Thoi gian", "Danh gia"};
+		String[] column_rate = {"Nguoi Danh Gia", "GiaoVien", "Danh gia"};
 		model_rate=new DefaultTableModel();
 		model_rate.setColumnIdentifiers(column_rate);
 		
@@ -291,24 +311,7 @@ public class HocSinhScreen extends JFrame{
 		TableRate.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
 
 
-		Object data_rate[]= {"Sinh","Nguyen Thi Linh","21/02/2022", "Co day sieu ghe"};
-		model_rate.addRow(data_rate);
-		
-//		try {
-//			ResultSet rs;
-//			rs = dtb.getRate(maHS);
-//			model_rate.setRowCount(0);
-//			while(rs.next()) {
-//				int idHS = rs.getInt("maHS");
-//				int idGV = rs.getInt("maGV");
-//				String note = rs.getString("NoiDung");
-//
-//				Object editData[] = {idHS,idGV, note};
-//				model_rate.addRow(editData);
-//			}
-//		} catch (SQLException e) {
-//			JOptionPane.showMessageDialog(null, "Can't search Treatment Place");
-//		}
+		refreshRateTable(model_rate);
 		
 		TableRate.setModel(model_rate);
 
@@ -317,8 +320,7 @@ public class HocSinhScreen extends JFrame{
 		TableColumnModel clmnModelRate = TableRate.getColumnModel();
 		clmnModelRate.getColumn(0).setPreferredWidth(70);
 		clmnModelRate.getColumn(1).setPreferredWidth(100);
-		clmnModelRate.getColumn(2).setPreferredWidth(100);
-		clmnModelRate.getColumn(3).setMinWidth(300);
+		clmnModelRate.getColumn(2).setMinWidth(300);
 
 		
 		scrollPane_rate.setViewportView(TableRate);
@@ -332,18 +334,30 @@ public class HocSinhScreen extends JFrame{
 		DoRatePanel.add(rateTextPane);
 		
 		JButton sendBtn = new JButton("G\u1EEDi");
-//		sendBtn.addActionListener(new ActionListener() {
-//			public void actionPerformed(ActionEvent e) {
-//				String rateText = rateTextPane.getText();
-//				String subject = subjectsComboBox.getSelectedItem().toString();
-//				try {
-//					dtb.sendRate(maHS, subject, rateText);
-//				} catch (SQLException e1) {
-//					// TODO Auto-generated catch block
-//					e1.printStackTrace();
-//				}
-//			}
-//		});
+		sendBtn.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				String rateText = rateTextPane.getText();
+				int subjectID =  listOfSubjects.get(subjectsComboBox.getSelectedIndex());		
+				System.out.println("Mon hoc "+subjectID);
+				if(rateText.equals("")) {
+					JOptionPane.showMessageDialog(HocSinhScreen.this, "Content is empty");
+				}
+				else {
+					try {
+						if(dtb.checkRate(maHS, subjectID))
+							JOptionPane.showMessageDialog(HocSinhScreen.this, "Already Rated this teacher !!!");
+						else {
+							dtb.sendRate(maHS, subjectID, rateText);
+							JOptionPane.showMessageDialog(HocSinhScreen.this, "Add rate success");
+						}
+					} catch (SQLException e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					}
+					refreshRateTable(model_rate);
+				}
+			}
+		});
 		sendBtn.setBounds(595, 289, 85, 77);
 		DoRatePanel.add(sendBtn);
 		
@@ -401,6 +415,100 @@ public class HocSinhScreen extends JFrame{
 				
 	}		
 	
+	
+	private boolean configDatabase(){
+		boolean isSuccess = false;
+		JPanel dialogPanel = new JPanel(new GridBagLayout());
+
+		JTextField server = new JTextField(15);
+		server.setText("localhost");
+		JTextField port = new JTextField(15);
+		port.setText("1433");
+		JTextField db_name = new JTextField(15);
+		db_name.setText("ManageScore");
+		JTextField user = new JTextField(15);
+		JPasswordField pass = new JPasswordField(15);
+
+		GridBagConstraints gbc = new GridBagConstraints();
+		gbc.insets = new Insets(3,5,3,15);
+		gbc.gridx=0;
+		gbc.gridy=0;
+		dialogPanel.add(new JLabel("Server: "), gbc);
+		gbc.gridx=1;
+		dialogPanel.add(server,gbc);
+		gbc.gridx=0;
+		gbc.gridy=1;
+		dialogPanel.add(new JLabel("Port: "), gbc);
+		gbc.gridx=1;
+		gbc.gridy=1;
+		dialogPanel.add(port, gbc);
+		gbc.gridx=0;
+		gbc.gridy=2;
+		dialogPanel.add(new JLabel("Database name: "), gbc);
+		gbc.gridx=1;
+		gbc.gridy=2;
+		dialogPanel.add(db_name, gbc);
+		gbc.gridx=0;
+		gbc.gridy=3;
+		dialogPanel.add(new JLabel("Username: "), gbc);
+		gbc.gridx=1;
+		gbc.gridy=3;
+		dialogPanel.add(user, gbc);
+		gbc.gridx=0;
+		gbc.gridy=4;
+		dialogPanel.add(new JLabel("Password: "), gbc);
+		gbc.gridx=1;
+		gbc.gridy=4;
+		dialogPanel.add(pass, gbc);
+
+		int result = JOptionPane.showConfirmDialog(tabbedPane, dialogPanel, "Config database",
+				JOptionPane.OK_CANCEL_OPTION,JOptionPane.PLAIN_MESSAGE);
+
+		if(result == JOptionPane.OK_OPTION) {
+			connectionUrl =
+					String.format("jdbc:sqlserver://%s:%s;databaseName=%s;user=%s;password=%s",
+							server.getText(), port.getText(), db_name.getText(), user.getText(), String.valueOf(pass.getPassword()));
+			Connection connection = null;
+
+			try{
+				Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
+				connection = DriverManager.getConnection(connectionUrl);
+
+				if(connection != null) {
+					isSuccess = true;
+
+					ConfigUserSetting.databaseName = db_name.getText();
+					ConfigUserSetting.username = user.getText();
+					ConfigUserSetting.password = String.valueOf(pass.getPassword());
+
+					JOptionPane.showMessageDialog(tabbedPane,
+							"Connected to database " + db_name.getText(), "Success",
+							JOptionPane.INFORMATION_MESSAGE);
+				} else {
+					JOptionPane.showMessageDialog(tabbedPane, "Connect to database fail !",
+							"Warning", JOptionPane.WARNING_MESSAGE);
+				}
+			}
+			catch (Exception ex){
+				ex.printStackTrace();
+				JOptionPane.showMessageDialog(tabbedPane, "Connect to database fail !",
+						"Warning", JOptionPane.WARNING_MESSAGE);
+			}
+			finally {
+				if(connection != null){
+					try{
+						connection.close();
+					}
+					catch(Exception ex) {
+						ex.printStackTrace();
+					}
+				}
+			}
+		}
+
+		return isSuccess;
+	}
+	
 	private void refreshPointTable( DefaultTableModel model) {
 		ResultSet rs;
 		try {
@@ -423,6 +531,42 @@ public class HocSinhScreen extends JFrame{
 			JOptionPane.showMessageDialog(null, "Can't search BangDiem");
 		}
 	}
+	
+
+	private void refreshReviewTable( DefaultTableModel model) {
+		ResultSet rs;
+		try {
+				rs = dtb.getReview(maHS);
+				model.setRowCount(0);
+				while(rs.next()) {
+					String monhoc = Normalizer.normalize(rs.getString("TenMH"), Form.NFD);
+					String tengv = rs.getString("HoTen");
+					String note = rs.getString("NoiDung");
+
+					Object editData[] = {monhoc,tengv, note};
+					model.addRow(editData);
+				}
+			} catch (SQLException e) {
+				JOptionPane.showMessageDialog(null, "Can't search Review Table");
+			}
+	}
+	
+	private void refreshRateTable( DefaultTableModel model) {
+		try {
+			model.setRowCount(0);
+			listRates = dtb.getRate(maHS);
+			for(DanhGia data: listRates) {
+				Object editData[] = {dtb.getHocSinh(maHS).get_fullName(), dtb.getGiaoVien(data.get_teacherId()).get_fullName(), data.get_content()};
+				model.addRow(editData);
+			}
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+	}
+	
+	
 	
 	private String gradeCol(int col) {
 		switch (col) {

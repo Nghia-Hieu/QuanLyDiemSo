@@ -25,6 +25,14 @@ public class GiaoVien {
         this._accountId = accountId;
         this._listClass = listClass;
     }
+    
+    public GiaoVien(int id, String fullName, int subjectTeaching, int accountId) {
+        this._id = id;
+        this._fullName = fullName;
+        this._subjectTeaching = subjectTeaching;
+        this._accountId = accountId;
+        this._listClass = null;
+    }
 
     public int get_id() {
         return _id;

@@ -1,5 +1,6 @@
 package com.example.qldiemso.string;
 
+import java.security.AlgorithmConstraints;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -8,20 +9,19 @@ import java.sql.Statement;
 import java.text.Normalizer;
 import java.text.Normalizer.Form;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import com.example.qldiemso.model.HocSinh;
 import com.example.qldiemso.model.BangDiem;
+import com.example.qldiemso.model.DanhGia;
+import com.example.qldiemso.model.GiaoVien;
 
 public class HocSinhDtb {
 	private String connectionUrl;
 
 	static public void main(String[] args) throws ClassNotFoundException, SQLException {
-		String aString = Normalizer.normalize("Ngữ Văn", Form.NFD);
-		String aString2 ="Hello "+aString;
-		System.out.println(aString2);
 		HocSinhDtb h = new HocSinhDtb();
-		//h.updateMarkOfSubject(1,1,9,9,9,9, "hello world");
 	}
 	
 	public HocSinhDtb() {
@@ -40,7 +40,7 @@ public class HocSinhDtb {
 		System.out.println(query);
 		Connection conn;
 		try {
-			conn = DriverManager.getConnection(dbURL, username, password);
+			conn = DriverManager.getConnection(connectionUrl);
 			Statement st = conn.createStatement();
 			ResultSet rs = st.executeQuery(query);
 			if (rs.next()) {
@@ -52,6 +52,74 @@ public class HocSinhDtb {
 			e.printStackTrace();
 		}
 		return null;
+	}
+	
+	public HocSinh getHocSinh(int id) throws SQLException {
+		String query = String.format("SELECT * FROM HocSinh WHERE MaHS = %s",id);
+		System.out.println(query);
+		Connection conn = DriverManager.getConnection(connectionUrl);
+		Statement st = conn.createStatement();
+		ResultSet rs = st.executeQuery(query);
+		rs.next();
+		HocSinh hSinh = new HocSinh(rs.getInt(1), rs.getString(2), rs.getInt(3), rs.getInt(4), rs.getInt(5), rs.getInt(6));
+		return hSinh;
+	}
+	
+	public GiaoVien getGiaoVien(int id) throws SQLException {
+		String query = String.format("SELECT * FROM GiaoVien WHERE MaGV = %s",id);
+		System.out.println(query);
+		Connection conn = DriverManager.getConnection(connectionUrl);
+		Statement st = conn.createStatement();
+		ResultSet rs = st.executeQuery(query);
+		rs.next();
+		GiaoVien gv = new GiaoVien(rs.getInt(1), rs.getString(2), rs.getInt(3), rs.getInt(4));
+		return gv;
+	}
+	
+	public ArrayList<Integer> getSubjectList() throws SQLException{
+		ArrayList<Integer> subjectStrings= new ArrayList<>();
+		String query = "SELECT * FROM MonHoc";
+
+		Connection conn = DriverManager.getConnection(connectionUrl);
+		Statement st = conn.createStatement();
+		ResultSet rs = st.executeQuery(query);
+		while(rs.next())
+			subjectStrings.add(rs.getInt(1));
+		return subjectStrings;
+		
+	}
+	
+	public ResultSet listSubject() throws SQLException {
+		String query = "SELECT * FROM MonHoc";
+		
+				Connection conn = DriverManager.getConnection(connectionUrl);
+				Statement st = conn.createStatement();
+				ResultSet rs = st.executeQuery(query);
+				return rs;
+	}
+	
+	public String getSubjectName(int id) throws SQLException{
+		String sname = "";
+		String query = String.format("SELECT * FROM MonHoc WHERE MaMH = %s",id);
+		System.out.println(query);
+		Connection conn = DriverManager.getConnection(connectionUrl);
+		Statement st = conn.createStatement();
+		ResultSet rs = st.executeQuery(query);
+		rs.next();
+		sname = Normalizer.normalize(rs.getString(2),Form.NFD);
+		return sname;
+	}
+	
+	public int getSubjectID(String name) throws SQLException{
+		int sid;
+		String query = String.format("SELECT * FROM MonHoc WHERE TenMH = %s",name);
+		System.out.println(query);
+		Connection conn = DriverManager.getConnection(connectionUrl);
+		Statement st = conn.createStatement();
+		ResultSet rs = st.executeQuery(query);
+		rs.next();
+		sid = rs.getInt(1);
+		return sid;
 	}
 	
 	public ResultSet getPointInfor(int id) throws SQLException {
@@ -283,24 +351,53 @@ public class HocSinhDtb {
 		return rs;
 	} 
 	
-	public ResultSet getRate(int id) throws SQLException {
-		String query = "SELECT * FROM DanhGiaGiaoVien WHERE HocSinh='"+id+"'";
+	
+
+	
+	public ArrayList<DanhGia> getRate(int id) throws SQLException{
+		ArrayList<DanhGia> dgList = new ArrayList<>();
+		String query = String.format("SELECT * FROM DanhGiaGiaoVien WHERE HocSinh= %s",id);
 		System.out.println(query);
 		Connection conn = DriverManager.getConnection(connectionUrl);
 		Statement st = conn.createStatement();
 		ResultSet rs = st.executeQuery(query);
-		return rs;
-	} 
+		while(rs.next()) {
+			int idDG = rs.getInt(1);
+			int idHS = rs.getInt(2);
+			int idGV = rs.getInt(3);
+			String note = rs.getString(4);
+			dgList.add(new DanhGia(idDG, idHS, idGV, note));
+		}
+		return dgList;
+	}
 	
-	public void sendRate(int maHS , String subject, String text) throws SQLException {
+	public void sendRate(int maHS , int subject, String text) throws SQLException {
 
 		Connection conn = DriverManager.getConnection(connectionUrl);
 		Statement st = conn.createStatement();
-		String query_check = "SELECT * FROM HocSinh LEFT JOIN LopHoc WHERE LopHoc = MaLop LEFT JOIN GIAOVIEN_LOPHOC "
-				+ "WHERE GiaoVien_LopHoc.MaLop = LopHoc.MaLop LEFT JOIN GiaoVien WHERE GiaoVien.MaGV = GiaoVien_LopHoc.MaGV AND MonGiangDay = " + subject;
+		String query_check = String.format("SELECT * FROM HocSinh hs JOIN LopHoc lh ON hs.LopHoc = lh.MaLop JOIN GiaoVien_LopHoc gl "
+				+ "ON gl.MaLop = lh.MaLop JOIN GiaoVien gv ON gv.MaGV = gl.MaGV AND gv.MonGiangDay = %s AND hs.MaHS = %s",subject,maHS);
 		ResultSet rs = st.executeQuery(query_check);
+		rs.next();
 		int maGV = rs.getInt("MaGV");
-		String query = "INSERT INTO DanhGiaGiaoVien VALUES (" + maHS + "','" + maGV + "','" + text + "')";
+		String query = String.format("INSERT INTO DanhGiaGiaoVien VALUES (%s, %s, '%s')",maHS, maGV, text);
 		st.executeUpdate(query);
+	}
+	
+	public boolean checkRate(int maHS, int subject) throws SQLException{
+		Connection conn = DriverManager.getConnection(connectionUrl);
+		Statement st = conn.createStatement();
+		String query_check = String.format("SELECT * FROM HocSinh hs JOIN LopHoc lh ON hs.LopHoc = lh.MaLop JOIN GiaoVien_LopHoc gl "
+				+ "ON gl.MaLop = lh.MaLop JOIN GiaoVien gv ON gv.MaGV = gl.MaGV AND gv.MonGiangDay = %s AND hs.MaHS = %s",subject,maHS);
+		ResultSet rs = st.executeQuery(query_check);
+		rs.next();
+		int maGV = rs.getInt("MaGV");
+		String query_main = String.format("SELECT * FROM DanhGia WHERE HocSinh = %s AND GiaoVien = %s", maHS, maGV);
+		System.out.println(query_main);
+		if(rs.next())
+			return true;
+		else 
+			return false;
+		
 	}
 }
