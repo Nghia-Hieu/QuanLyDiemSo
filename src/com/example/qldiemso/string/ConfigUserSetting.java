@@ -12,15 +12,12 @@ public class ConfigUserSetting {
 
     static public String databaseName = "ManageScore";
     static public String username = "sa";
-    static public String password = "123";
+    static public String password = "12345678";
     static public String getConnectionUrl(){
         return String.format("jdbc:sqlserver://localhost:1433;databaseName=%s;username=%s;password=%s;MultipleActiveResultSets=True;",
                 databaseName, username, password);
     }
-    
-    //static public String connectionUrl="jdbc:sqlserver://NIERA-ASUS\\SQLEXPRESS; databaseName=ManageScore";
-    //static public String username = "sa";
-    //static public String password = "12345678";
+
 
 }
 

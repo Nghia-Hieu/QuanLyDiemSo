@@ -13,12 +13,14 @@ import java.util.HashMap;
 import java.util.List;
 
 import com.example.qldiemso.model.HocSinh;
+import com.example.qldiemso.model.PhucKhao;
 import com.example.qldiemso.model.BangDiem;
 import com.example.qldiemso.model.DanhGia;
 import com.example.qldiemso.model.GiaoVien;
 
 public class HocSinhDtb {
 	private String connectionUrl;
+	
 
 	static public void main(String[] args) throws ClassNotFoundException, SQLException {
 		HocSinhDtb h = new HocSinhDtb();
@@ -342,8 +344,8 @@ public class HocSinhDtb {
 	}
 	
 	public ResultSet getReview(int id) throws SQLException {
-		String query = String.format("SELECT * FROM PhucKhao pk LEFT JOIN GiaoVien gv ON pk.GiaoVien = gv.MaGV"
-				+ " LEFT JOIN MonHoc mh ON mh.MaMH = gv.MonGiangDay and pk.HocSinh= %s ",id);
+		String query = String.format("SELECT * FROM PhucKhao pk JOIN GiaoVien gv ON pk.GiaoVien = gv.MaGV"
+				+ "  JOIN MonHoc mh ON mh.MaMH = gv.MonGiangDay and pk.HocSinh= %s ",id);
 		System.out.println(query);
 		Connection conn = DriverManager.getConnection(connectionUrl);
 		Statement st = conn.createStatement();
@@ -371,6 +373,54 @@ public class HocSinhDtb {
 		return dgList;
 	}
 	
+	 public List<PhucKhao> getReviewOf(int id) {
+	        List<PhucKhao> listReviews = new ArrayList<PhucKhao>();
+
+	        Connection conn = null;
+	        Statement statement = null;
+	        ResultSet resultSet = null;
+
+	        try{
+	            conn = DriverManager.getConnection(connectionUrl);
+	            String SQL = String.format("SELECT * FROM PhucKhao WHERE HocSinh = %s", id);
+	            statement = conn.createStatement();
+	            resultSet = statement.executeQuery(SQL);
+
+	            while (resultSet.next()) {
+	            	
+	                int rid = Integer.parseInt(resultSet.getString(1));
+	                int teacherId = Integer.parseInt(resultSet.getString(3));
+	                String content = resultSet.getString(4);
+	                int status = Integer.parseInt(resultSet.getString(5));
+	                String reason = resultSet.getString(6);
+
+	                listReviews.add(new PhucKhao(rid, id, teacherId, content, status, reason));
+	            }
+
+	        } catch (Exception ignored){
+
+	        } finally {
+	            if(statement != null){
+	                try{
+	                    conn.close();
+	                }
+	                catch(Exception ex) {
+	                    ex.printStackTrace();
+	                }
+	            }
+	            if(resultSet != null){
+	                try{
+	                    conn.close();
+	                }
+	                catch(Exception ex) {
+	                    ex.printStackTrace();
+	                }
+	            }
+	        }
+
+	        return listReviews;
+	    }
+	
 	public void sendRate(int maHS , int subject, String text) throws SQLException {
 
 		Connection conn = DriverManager.getConnection(connectionUrl);
@@ -380,7 +430,7 @@ public class HocSinhDtb {
 		ResultSet rs = st.executeQuery(query_check);
 		rs.next();
 		int maGV = rs.getInt("MaGV");
-		String query = String.format("INSERT INTO DanhGiaGiaoVien VALUES (%s, %s, '%s')",maHS, maGV, text);
+		String query = String.format("INSERT INTO DanhGiaGiaoVien VALUES (%s, %s, N'%s')",maHS, maGV, text);
 		st.executeUpdate(query);
 	}
 	

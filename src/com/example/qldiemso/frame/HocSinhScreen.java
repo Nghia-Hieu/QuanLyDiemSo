@@ -54,10 +54,11 @@ import javax.swing.JTextField;
 public class HocSinhScreen extends JFrame{
 
 	private JFrame frame;
-	private int maHS = 1;
+	private int maHS;
 	private HocSinh hs;
 	String connectionUrl = "";
 	boolean connectedDB = false;
+	private ArrayList<Integer>listOfSubjectsInPoint;
 	private ArrayList<Integer>listOfSubjects;
 	private ArrayList<DanhGia>listRates;
 	private ArrayList<Integer>rateSubjects ;
@@ -81,7 +82,7 @@ public class HocSinhScreen extends JFrame{
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
 				try {
-					HocSinhScreen window = new HocSinhScreen();
+					HocSinhScreen window = new HocSinhScreen(2);
 					window.setVisible(true);
 				} catch (Exception e) {
 					e.printStackTrace();
@@ -103,7 +104,8 @@ public class HocSinhScreen extends JFrame{
 		this.maHS = maHS;
 		initialize();
 	}
-
+	
+	
 	/**
 	 * Initialize the contents of the frame.
 	 */
@@ -137,6 +139,7 @@ public class HocSinhScreen extends JFrame{
 		dtb = new HocSinhDtb();
 		hs = dtb.getStudentInfor(maHS);
 		listOfSubjects = new ArrayList<Integer>();
+		listOfSubjectsInPoint = new ArrayList<>();
 				
 		tabbedPane = new JTabbedPane(JTabbedPane.TOP);
 		tabbedPane.setBounds(10, 10, 767, 454);
@@ -188,7 +191,7 @@ public class HocSinhScreen extends JFrame{
 
 		scrollPane_class.setViewportView(TableGrade);
 		
-		JButton refreshListBtn = new JButton("L\u00E0m m\u1EDBi");
+		JButton refreshListBtn = new JButton("Refresh");
 		refreshListBtn.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				refreshPointTable(model_class);
@@ -206,7 +209,7 @@ public class HocSinhScreen extends JFrame{
 				String grade_review = gradeCol(grade_col);
 				String subject_name = (String) TableGrade.getValueAt(grade_row,2);	
 				
-				int subject_review = listOfSubjects.get(grade_row);
+				int subject_review = listOfSubjectsInPoint.get(grade_row);
 				
 				String grade_review_text = "Phuc khao: "+ grade_review +"--Mon: "+subject_name;
 				
@@ -339,7 +342,7 @@ public class HocSinhScreen extends JFrame{
 		JButton sendBtn = new JButton("G\u1EEDi");
 		sendBtn.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				String rateText = rateTextPane.getText();
+				String rateText =Normalizer.normalize(rateTextPane.getText(), Form.NFD);
 				int subjectID =  listOfSubjects.get(subjectsComboBox.getSelectedIndex());		
 				System.out.println("Mon hoc "+subjectID);
 				if(rateText.equals("")) {
@@ -518,21 +521,28 @@ public class HocSinhScreen extends JFrame{
 	private void refreshPointTable( DefaultTableModel model) {
 		ResultSet rs;
 		try {
-			rs = dtb.getPointInfor(maHS);
+			
 			model.setRowCount(0);
-			while(rs.next()) {
-				String subject = Normalizer.normalize(rs.getString("TenMH"),Form.NFD);
-				int subjectID = rs.getInt("MaMH");
-				String name = rs.getString("HoTen");
-				float kt15 = rs.getFloat("KiemTra15Phut");
-				float kt1 = rs.getFloat("KiemTra1Tiet");
-				float ktg = rs.getFloat("ThiGiuaKi");
-				float ktc = rs.getFloat("ThiCuoiKi");
-
-				Object editData[] = {maHS, name, subject, kt15, kt1, ktg, ktc};
-				listOfSubjects.add(subjectID);
+				
+			for(BangDiem bd: dtb.getAllMarksOf(maHS)) {
+				Object editData[] = {maHS, dtb.getHocSinh(maHS).get_fullName(), dtb.getSubjectName(bd.get_subjectId()),
+									 bd.get_test15minutes(), bd.get_test1period(), bd.get_middleSemester(), bd.get_finalSemester()};
+				listOfSubjectsInPoint.add(bd.get_subjectId());
 				model.addRow(editData);
 			}
+			//while(rs.next()) {
+//				String subject = Normalizer.normalize(rs.getString("TenMH"),Form.NFD);
+//				int subjectID = rs.getInt("MaMH");
+//				String name = rs.getString("HoTen");
+//				float kt15 = rs.getFloat("KiemTra15Phut");
+//				float kt1 = rs.getFloat("KiemTra1Tiet");
+//				float ktg = rs.getFloat("ThiGiuaKi");
+//				float ktc = rs.getFloat("ThiCuoiKi");
+//
+//				Object editData[] = {maHS, name, subject, kt15, kt1, ktg, ktc};
+//				listOfSubjectsInPoint.add(subjectID);
+//				model.addRow(editData);
+//			}
 		} catch (SQLException e) {
 			JOptionPane.showMessageDialog(null, "Can't search BangDiem");
 		}
@@ -544,6 +554,8 @@ public class HocSinhScreen extends JFrame{
 		try {
 				rs = dtb.getReview(maHS);
 				model.setRowCount(0);
+				if(!rs.next())
+					return;
 				while(rs.next()) {
 					String monhoc = Normalizer.normalize(rs.getString("TenMH"), Form.NFD);
 					String tengv = rs.getString("HoTen");
