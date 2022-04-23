@@ -15,6 +15,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.text.Normalizer;
 import java.text.Normalizer.Form;
 import java.util.ArrayList;
@@ -71,9 +72,7 @@ public class HocSinhScreen extends JFrame{
 	private DefaultTableModel model_class, model_review, model_rate;
 	private JLabel rateTextLabel;
 	private JTextField idCPText;
-	private JTextField passCPText;
-	private JTextField newPassCPText;
-	private JTextField confirmPassCPText;
+	private JPasswordField passCPText, newPassCPText, confirmPassCPText;
 	
 	private HocSinhDtb dtb;
 
@@ -381,14 +380,16 @@ public class HocSinhScreen extends JFrame{
 		idCPText.setBounds(363, 118, 123, 19);
 		idCPText.setColumns(10);
 		idCPText.setEditable(false);
+		idCPText.setText(Integer.toString(maHS));
 		ManagePanel.add(idCPText);
 		
 		JLabel changePassLabel = new JLabel("\u0110\u1ED4I M\u1EACT KH\u1EA8U");
 		changePassLabel.setBounds(311, 40, 96, 45);
 		ManagePanel.add(changePassLabel);
 		
-		passCPText = new JTextField();
+		passCPText = new JPasswordField();
 		passCPText.setBounds(363, 171, 123, 19);
+		
 		ManagePanel.add(passCPText);
 		passCPText.setColumns(10);
 		
@@ -404,7 +405,7 @@ public class HocSinhScreen extends JFrame{
 		newPassLabel.setBounds(226, 229, 102, 16);
 		ManagePanel.add(newPassLabel);
 		
-		newPassCPText = new JTextField();
+		newPassCPText = new JPasswordField();
 		newPassCPText.setColumns(10);
 		newPassCPText.setBounds(363, 228, 123, 19);
 		ManagePanel.add(newPassCPText);
@@ -413,16 +414,45 @@ public class HocSinhScreen extends JFrame{
 		confirmPassLabel.setBounds(226, 281, 114, 16);
 		ManagePanel.add(confirmPassLabel);
 		
-		confirmPassCPText = new JTextField();
+		confirmPassCPText = new JPasswordField();
 		confirmPassCPText.setColumns(10);
 		confirmPassCPText.setBounds(363, 280, 123, 19);
 		ManagePanel.add(confirmPassCPText);
 		
 		JButton confirmCPLabel = new JButton("X\u00E1c nh\u1EADn \u0111\u1ED5i");
+		confirmCPLabel.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				String curPass = passCPText.getText();
+				String newPass = newPassCPText.getText();
+				String conPass = confirmPassCPText.getText();
+				
+				if(curPass.equals("") || newPass.equals("") || conPass.equals("")) {
+					JOptionPane.showMessageDialog(HocSinhScreen.this, "Please fill in all cap !!!");
+				}
+				else {
+					if(dtb.checkAccount(maHS, curPass)) {
+						if(!newPass.equals(conPass))
+							JOptionPane.showMessageDialog(HocSinhScreen.this, "Confirm Pass doesn't match !!!");
+						else {
+							dtb.updateAccount(maHS, newPass);
+							JOptionPane.showMessageDialog(HocSinhScreen.this, "Update Password Success");
+							passCPText.setText("");
+							newPassCPText.setText("");
+							confirmPassCPText.setText("");
+						}
+					}
+					else
+						JOptionPane.showMessageDialog(HocSinhScreen.this, "Password incorrect !!!");
+				
+				}
+			}
+		});
 		confirmCPLabel.setBounds(294, 350, 123, 21);
 		ManagePanel.add(confirmCPLabel);
 				
-	}		
+	}	
+	
+	
 	
 	
 	private boolean configDatabase(){

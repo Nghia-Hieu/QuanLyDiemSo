@@ -451,4 +451,52 @@ public class HocSinhDtb {
 			return false;
 		
 	}
+	
+	public boolean checkAccount(int id, String pass) {
+		Connection conn = null;
+		Statement statement = null;
+		ResultSet resultSet = null;
+
+		try {
+			conn = DriverManager.getConnection(connectionUrl);
+			String SQL = String.format("SELECT * FROM TaiKhoan WHERE MaSoTK = %s AND MatKhau = '%s'", id, pass);
+			statement = conn.createStatement();
+			resultSet = statement.executeQuery(SQL);
+			if (resultSet.next()) 
+				return true;
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return false;
+	}
+	
+	public void updateAccount(int id, String pass) {
+		Connection conn = null;
+		Statement statement = null;
+		ResultSet resultSet = null;
+
+		try {
+			conn = DriverManager.getConnection(connectionUrl);
+			String SQL = String.format("UPDATE TaiKhoan SET MatKhau = '%s' WHERE MaSoTK = %s;",pass, id);
+            statement = conn.createStatement();
+            int s = statement.executeUpdate(SQL);
+            if (s > 0) {
+                System.out.println("Successfully update");
+            } else {
+                System.out.println("Faild to update");
+            }
+        } catch (Exception ex){
+            ex.printStackTrace();
+        } finally {
+            if(statement != null){
+                try{
+                    conn.close();
+                }
+                catch(Exception ex) {
+                    ex.printStackTrace();
+                }
+            }
+        };
+	}
 }
