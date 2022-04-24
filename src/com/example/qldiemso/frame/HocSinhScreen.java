@@ -131,9 +131,9 @@ public class HocSinhScreen extends JFrame{
 		setContentPane(contentPane);
 		contentPane.setLayout(null);
 		
-		if(!connectedDB){
-			connectedDB = configDatabase();
-		}
+//		if(!connectedDB){
+//			connectedDB = configDatabase();
+//		}
 		
 		dtb = new HocSinhDtb();
 		hs = dtb.getStudentInfor(maHS);
